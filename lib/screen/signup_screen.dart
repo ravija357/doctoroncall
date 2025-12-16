@@ -73,7 +73,7 @@ class SignupScreen extends StatelessWidget {
 }
 class _LabelText extends StatelessWidget {
   final String text;
-  const _LabelText(this.text, {super.key});
+  const _LabelText(this.text);
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +101,6 @@ class _RoundedField extends StatelessWidget {
   const _RoundedField({
     this.obscure = false,
     this.width,
-    super.key,
   });
 
   @override
