@@ -1,105 +1,168 @@
 import 'package:flutter/material.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  int _selectedIndex = 0;
+
+ 
+  List<Widget> get _pages => [
+        const _HomeDashboardContent(),   
+        const Center(child: Text('Appointments Screen')),
+         const Center(child: Text('Notification Screen')), 
+        const Center(child: Text('Profile Screen')),
+           
+      ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(child: _pages[_selectedIndex]),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xFF6AA9D8),
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_month_outlined),
+            activeIcon: Icon(Icons.calendar_month),
+            label: 'Appointments',
+          ),
+           BottomNavigationBarItem(
+            icon: Icon(Icons.notification_add_outlined),
+            activeIcon: Icon(Icons.notification_add),
+            label: 'Notification',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+         
+        ],
+      ),
+    );
+  }
+}
+
+
+
+class _HomeDashboardContent extends StatelessWidget {
+  const _HomeDashboardContent({super.key});
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top right profile avatar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: const [
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundImage:
-                        AssetImage('assets/images/doctor_profile.png'),
-                  ),
-                ],
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+     
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: const [
+              CircleAvatar(
+                radius: 26,
+                backgroundImage:
+                    AssetImage('assets/images/doctor_profile.png'),
               ),
-              const SizedBox(height: 24),
-
-              const Text(
-                'Find Your Doctor',
-                style: TextStyle(
-                  fontFamily: 'PlayfairDisplay',
-                  fontSize: 32,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              const Text(
-                'Book an appointment for consultation',
-                style: TextStyle(
-                  fontFamily: 'PlayfairDisplay',
-                  fontSize: 18,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              const Text(
-                'Browse by Category',
-                style: TextStyle(
-                  fontFamily: 'PlayfairDisplay',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Category row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  _CategoryCard(
-                    title: 'WheelChair',
-                    icon: Icons.accessible,
-                  ),
-                  _CategoryCard(
-                    title: 'NutrisI',
-                    icon: Icons.local_drink,
-                  ),
-                  _CategoryCard(
-                    title: 'Heart',
-                    icon: Icons.favorite_border,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              // Doctor cards
-              const _DoctorCard(
-                name: 'Dr.Steave Smith',
-                degree: 'MBBS, ND-DNB',
-                timing: 'Opening Timings: 9:00am - 5:00pm.',
-                imageAsset: 'assets/images/doc1.png',
-              ),
-              const SizedBox(height: 24),
-              const _DoctorCard(
-                name: 'Dr.Josepin Clara',
-                degree: 'MBBS, ND-DNB',
-                timing: 'Opening Timings: 9:00am - 5:00pm.',
-                imageAsset: 'assets/images/doc2.png',
-              ),
-              const SizedBox(height: 24),
             ],
           ),
-        ),
+          const SizedBox(height: 24),
+
+          const Text(
+            'Find Your Doctor',
+            style: TextStyle(
+              fontFamily: 'PlayfairDisplay',
+              fontSize: 32,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          const Text(
+            'Book an appointment for consultation',
+            style: TextStyle(
+              fontFamily: 'PlayfairDisplay',
+              fontSize: 18,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 40),
+
+          const Text(
+            'Browse by Category',
+            style: TextStyle(
+              fontFamily: 'PlayfairDisplay',
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+         
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              _CategoryCard(
+                title: 'WheelChair',
+                icon: Icons.accessible,
+              ),
+              _CategoryCard(
+                title: 'NutrisI',
+                icon: Icons.local_drink,
+              ),
+              _CategoryCard(
+                title: 'Heart',
+                icon: Icons.favorite_border,
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+         
+          const _DoctorCard(
+            name: 'Dr.Steave Smith',
+            degree: 'MBBS, ND-DNB',
+            timing: 'Opening Timings: 9:00am - 5:00pm.',
+            imageAsset: 'assets/images/doc1.png',
+          ),
+          const SizedBox(height: 24),
+          const _DoctorCard(
+            name: 'Dr.Josepin Clara',
+            degree: 'MBBS, ND-DNB',
+            timing: 'Opening Timings: 9:00am - 5:00pm.',
+            imageAsset: 'assets/images/doc2.png',
+          ),
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }
 }
+
+
 
 class _CategoryCard extends StatelessWidget {
   final String title;
@@ -184,7 +247,7 @@ class _DoctorCard extends StatelessWidget {
         ],
       ),
       child: Row(
-        children:[
+        children: [
           CircleAvatar(
             radius: 28,
             backgroundImage: AssetImage(imageAsset),
@@ -223,11 +286,11 @@ class _DoctorCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           SizedBox(
-            width: 80,
+            width: 90,
             height: 36,
             child: ElevatedButton(
               onPressed: () {
-                // TODO: handle booking tap
+               
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6AA9D8),
