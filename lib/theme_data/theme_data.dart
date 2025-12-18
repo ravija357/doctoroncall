@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 ThemeData getApplicationTheme(){
   return ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF6AA9D8)),
         // useMaterial3: true,
         fontFamily: "OpenSans Regular",
         elevatedButtonTheme: ElevatedButtonThemeData(
