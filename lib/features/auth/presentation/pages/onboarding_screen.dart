@@ -1,6 +1,5 @@
+import 'package:doctoroncall/features/auth/presentation/pages/role_selection_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:doctoroncall/screen/role_selection_screen.dart';
-
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -66,7 +65,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Dots
+         
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
@@ -85,47 +84,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Next / Get Started button
-            // Next / Get Started button
-Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 32.0),
-  child: SizedBox(
-    width: double.infinity,
-    height: 60,
-    child: ElevatedButton(
-      onPressed: () {
-        if (_index < 2) {
-          _controller.nextPage(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const RoleSelectionScreen(),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: ElevatedButton(
+                  onPressed: _next, 
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _index == 2 ? 'Get Started' : 'Next',
+                    style: const TextStyle(
+                      fontFamily: 'PlayfairDisplay',
+                      fontSize: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          );
-        }
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: _blue,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        elevation: 0,
-      ),
-      child: Text(
-        _index == 2 ? 'Get Started' : 'Next',
-        style: const TextStyle(
-          fontFamily: 'PlayfairDisplay',
-          fontSize: 20,
-          color: Colors.white,
-        ),
-      ),
-    ),
-  ),
-),
 
             const SizedBox(height: 24),
           ],
@@ -152,13 +136,13 @@ class _OnboardPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Spacer(),
-          // Simple placeholder circle instead of image
+          
           Center(
             child: Container(
               width: 180,
               height: 180,
               decoration: BoxDecoration(
-                color: const Color(0xFF6AA9D8).withOpacity(0.1),
+                color: const Color(0xFF6AA9D8).withValues(alpha: 0.05), 
                 borderRadius: BorderRadius.circular(40),
               ),
               child: const Icon(

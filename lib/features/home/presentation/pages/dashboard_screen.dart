@@ -67,11 +67,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
 class _HomeDashboardContent extends StatelessWidget {
-  const _HomeDashboardContent({super.key});
+// ignore: unused_element_parameter
+const _HomeDashboardContent({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -187,7 +188,7 @@ class _CategoryCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -240,7 +241,7 @@ class _DoctorCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -314,3 +315,4 @@ class _DoctorCard extends StatelessWidget {
     );
   }
 }
+

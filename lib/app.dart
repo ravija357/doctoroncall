@@ -1,9 +1,7 @@
-import 'package:doctoroncall/screen/dashboard_screen.dart';
-import 'package:doctoroncall/screen/login_screen.dart';
-import 'package:doctoroncall/screen/onboarding_screen.dart';
-import 'package:doctoroncall/screen/role_selection_screen.dart';
-import 'package:doctoroncall/theme_data/theme_data.dart';
+import 'package:doctoroncall/features/auth/presentation/pages/onboarding_screen.dart';
+import 'package:doctoroncall/features/home/presentation/pages/dashboard_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:doctoroncall/theme_data/theme_data.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -14,7 +12,7 @@ class App extends StatelessWidget {
       title: 'doctoroncall',
       debugShowCheckedModeBanner: false,
       theme: getApplicationTheme(),
-      home: RoleSelectionScreen(),
+      home: const OnboardingScreen(),
     );
   }
 }

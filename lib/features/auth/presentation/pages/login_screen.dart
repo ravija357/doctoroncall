@@ -1,9 +1,65 @@
-import 'package:doctoroncall/screen/dashboard_screen.dart';
-import 'package:doctoroncall/screen/signup_screen.dart';
+import 'package:doctoroncall/features/home/presentation/pages/dashboard_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:doctoroncall/features/auth/data/datasources/auth_local_data_source.dart';
+import 'package:doctoroncall/features/auth/presentation/pages/signup_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _authLocalDataSource = AuthLocalDataSource();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onLoginPressed() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
+      return;
+    }
+
+    final user = await _authLocalDataSource.login(email, password);
+
+    if (!mounted) return;
+
+    if (user != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const DashboardScreen(),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid email or password')),
+      );
+    }
+  }
+
+  void _goToSignup() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SignupScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,11 +72,10 @@ class LoginScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Title
               const Text(
                 'Doctor On Call',
                 style: TextStyle(
-                  fontFamily: 'PlayfairDisplay', // change to your font
+                  fontFamily: 'PlayfairDisplay',
                   fontSize: 34,
                   fontWeight: FontWeight.w600,
                 ),
@@ -28,7 +83,6 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
 
-              // Email label
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Padding(
@@ -45,11 +99,12 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // Email field
-              _RoundedField(width: size.width * 0.8),
+              _RoundedField(
+                width: size.width * 0.8,
+                controller: _emailController,
+              ),
               const SizedBox(height: 24),
 
-              // Password label
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Padding(
@@ -66,11 +121,12 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // Password field
-              const _RoundedField(obscure: true),
+              _RoundedField(
+                obscure: true,
+                controller: _passwordController,
+              ),
               const SizedBox(height: 20),
 
-              // Forgot password
               TextButton(
                 onPressed: () {},
                 style: TextButton.styleFrom(
@@ -89,7 +145,6 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // Don't have account
               const Text(
                 'Don’t have an account?',
                 style: TextStyle(
@@ -100,19 +155,11 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Login button
               SizedBox(
                 width: size.width * 0.8,
                 height: 70,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const DashboardScreen(),
-                      ),
-                    );
-                  },
+                  onPressed: _onLoginPressed,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6AA9D8),
                     shape: RoundedRectangleBorder(
@@ -132,19 +179,12 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 40),
-              // signup button
+
               SizedBox(
                 width: size.width * 0.8,
                 height: 70,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SignupScreen(),
-                      ),
-                    );
-                  },
+                  onPressed: _goToSignup,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6AA9D8),
                     shape: RoundedRectangleBorder(
@@ -175,8 +215,13 @@ class LoginScreen extends StatelessWidget {
 class _RoundedField extends StatelessWidget {
   final bool obscure;
   final double? width;
+  final TextEditingController? controller;
 
-  const _RoundedField({this.obscure = false, this.width});
+  const _RoundedField({
+    this.obscure = false,
+    this.width,
+    this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +233,7 @@ class _RoundedField extends StatelessWidget {
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -197,9 +242,13 @@ class _RoundedField extends StatelessWidget {
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: TextField(
+        controller: controller,
         obscureText: obscure,
         decoration: const InputDecoration(border: InputBorder.none),
-        style: const TextStyle(fontFamily: 'PlayfairDisplay', fontSize: 18),
+        style: const TextStyle(
+          fontFamily: 'PlayfairDisplay',
+          fontSize: 18,
+        ),
       ),
     );
   }

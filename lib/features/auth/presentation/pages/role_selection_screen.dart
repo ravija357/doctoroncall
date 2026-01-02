@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:doctoroncall/screen/login_screen.dart';
-import 'package:doctoroncall/screen/dashboard_screen.dart';
+import 'package:doctoroncall/features/auth/presentation/pages/login_screen.dart';
+
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
