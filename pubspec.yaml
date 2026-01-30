@@ -38,6 +38,7 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   http: ^1.6.0
+  image_picker: ^1.2.1
 
 dev_dependencies:
   flutter_test:
@@ -74,7 +75,9 @@ flutter:
 
   assets:
     - assets/images/doctoroncall_logo.png
-
+    - assets/images/doctor-image1.jpeg
+    - assets/images/doctor-image2.jpg
+    - assets/images/doctor-image3.png
 
 
 
