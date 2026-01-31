@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../screens/profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -15,7 +16,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const _HomeDashboardContent(),   
         const Center(child: Text('Appointments Screen')),
          const Center(child: Text('Notification Screen')), 
-        const Center(child: Text('Profile Screen')),
+        const ProfileScreen(),
            
       ];
 

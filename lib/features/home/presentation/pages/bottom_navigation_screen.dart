@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 
+// IMPORT REAL PROFILE SCREEN
+import '../../../../screens/profile_screen.dart';
+
 class BottomNavigationScreen extends StatefulWidget {
   const BottomNavigationScreen({super.key});
 
   @override
-  State<BottomNavigationScreen> createState() => _BottomNavigationScreenState();
+  State<BottomNavigationScreen> createState() =>
+      _BottomNavigationScreenState();
 }
 
-class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
+class _BottomNavigationScreenState
+    extends State<BottomNavigationScreen> {
   int _selectedIndex = 0;
 
- 
-  final List<Widget> _pages = const [
-    Center(child: Text('Dashboard Screen')),
-    Center(child: Text('Analytics Screen')),
-    Center(child: Text('Profile Screen')),
+  // PAGES MUST MATCH BOTTOM NAV ITEMS COUNT
+  final List<Widget> _pages = [
+    const Center(child: Text('Dashboard Screen')),
+    const Center(child: Text('Analytics Screen')),
+    const ProfileScreen(), // REAL PROFILE SCREEN
+    const Center(child: Text('Notification Screen')),
   ];
 
   void _onItemTapped(int index) {
@@ -54,8 +60,8 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
             label: 'Profile',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notification_add),
-            activeIcon: Icon(Icons.notification_add),
+            icon: Icon(Icons.notifications_outlined),
+            activeIcon: Icon(Icons.notifications),
             label: 'Notification',
           ),
         ],

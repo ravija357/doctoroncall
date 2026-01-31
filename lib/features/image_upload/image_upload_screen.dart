@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../core/constants/api_constants.dart';
+import '../../core/constants/hive_boxes.dart';
 import '../../core/services/image_upload_service.dart';
 
 class ImageUploadScreen extends StatefulWidget {
@@ -16,8 +18,6 @@ class ImageUploadScreen extends StatefulWidget {
 class _ImageUploadScreenState extends State<ImageUploadScreen> {
   File? _selectedImage;
   bool _isUploading = false;
-
-  // This will store server image URL (Sprint 5 requirement)
   String? _serverImageUrl;
 
   Future<void> _pickImage() async {
@@ -28,7 +28,7 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
     if (pickedFile != null) {
       setState(() {
         _selectedImage = File(pickedFile.path);
-        _serverImageUrl = null; // reset server image
+        _serverImageUrl = null;
       });
     }
   }
@@ -40,27 +40,33 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
       _isUploading = true;
     });
 
-    final success =
+    final serverPath =
         await ImageUploadService.uploadImage(_selectedImage!);
 
-    if (success) {
-      // For Sprint 5, displaying a server image is enough
-      setState(() {
-        _serverImageUrl =
-            "${ApiConstants.baseUrl}/uploads/sample.jpg";
-      });
-    }
+    if (!mounted) return;
 
     setState(() {
       _isUploading = false;
     });
 
+    if (serverPath != null) {
+      final imageUrl = "${ApiConstants.baseUrl}$serverPath";
+
+      // ✅ SAVE IMAGE URL FOR PROFILE LOGO
+      final box = Hive.box(HiveBoxes.users);
+      box.put('profileImage', imageUrl);
+
+      setState(() {
+        _serverImageUrl = imageUrl;
+      });
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          success
-              ? "Image uploaded and displayed from server"
-              : "Image upload failed",
+          serverPath != null
+              ? "Image uploaded successfully"
+              : "Upload failed",
         ),
       ),
     );
@@ -120,7 +126,7 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Select, upload and display image from server",
+                      "Select image from gallery and upload",
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
