@@ -1,11 +1,19 @@
-# Sprint 5 – Mobile App Development
+## Sprint 5 Completion Report
 
-## Sprint Features
-1. Upload Image to Server
-2. Display Image from Server
-3. Testing
-   - 5 Unit Tests
-   - 5 Widget Tests
+### Implemented Features
+- Image upload from gallery
+- Backend image upload using Multer
+- Display uploaded image in Profile screen
+- Android emulator & real device support
 
-## Notes
-- This sprint is implemented as part of the Mobile App Development module.
+### Testing
+- Unit tests for image upload service
+- Widget tests for ProfileScreen and ImageUploadScreen
+- All tests passing successfully
+
+### Screens Tested
+- Profile Screen
+- Image Upload Screen
+
+### Status
+✅ Sprint 5 completed successfully
