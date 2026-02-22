@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../screens/profile_screen.dart';
+import 'package:doctoroncall/features/appointments/presentation/screens/appointment_list_screen.dart';
+import 'package:doctoroncall/features/doctors/presentation/screens/doctor_profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -13,8 +15,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
  
   List<Widget> get _pages => [
-        const _HomeDashboardContent(),   
-        const Center(child: Text('Appointments Screen')),
+        _HomeDashboardContent(),   
+        AppointmentListScreen(),
          const Center(child: Text('Notification Screen')), 
         const ProfileScreen(),
            
@@ -189,7 +191,7 @@ class _CategoryCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -242,7 +244,7 @@ class _DoctorCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -292,7 +294,14 @@ class _DoctorCard extends StatelessWidget {
             height: 36,
             child: ElevatedButton(
               onPressed: () {
-               
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DoctorProfileScreen(
+                      doctorId: 'dummy_doc_id',
+                    ),
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6AA9D8),

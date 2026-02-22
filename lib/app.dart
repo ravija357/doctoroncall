@@ -1,4 +1,4 @@
-import 'package:doctoroncall/features/auth/presentation/pages/onboarding_screen.dart';
+import 'package:doctoroncall/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:doctoroncall/theme_data/theme_data.dart';
 

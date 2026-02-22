@@ -1,4 +1,4 @@
-import 'package:doctoroncall/features/auth/presentation/pages/role_selection_screen.dart';
+import 'package:doctoroncall/features/auth/presentation/screens/role_selection_screen.dart';
 import 'package:flutter/material.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -142,7 +142,7 @@ class _OnboardPage extends StatelessWidget {
               width: 180,
               height: 180,
               decoration: BoxDecoration(
-                color: const Color(0xFF6AA9D8).withValues(alpha: 0.05), 
+                color: const Color(0xFF6AA9D8).withOpacity(0.05), 
                 borderRadius: BorderRadius.circular(40),
               ),
               child: const Icon(

@@ -171,7 +171,7 @@ class _RoundedField extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             // changed from withOpacity to withValues to fix deprecation
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

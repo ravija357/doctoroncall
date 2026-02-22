@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:doctoroncall/features/auth/presentation/pages/login_screen.dart';
+import 'package:doctoroncall/features/auth/presentation/screens/login_screen.dart';
 
 
 class RoleSelectionScreen extends StatelessWidget {
