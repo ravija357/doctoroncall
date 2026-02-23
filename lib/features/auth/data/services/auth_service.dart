@@ -1,8 +1,9 @@
+import 'package:doctoroncall/core/constants/api_constants.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-static const String baseUrl = 'http://10.0.2.2:3001/api/auth';
+  static String get baseUrl => '${ApiConstants.baseUrl}/api/auth';
 
   // iOS simulator: http://localhost:3001
 

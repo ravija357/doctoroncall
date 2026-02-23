@@ -3,8 +3,11 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:doctoroncall/app.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 
+import 'package:doctoroncall/core/di/injection_container.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initDependencies();
   await Hive.initFlutter();
   await Hive.openBox(HiveBoxes.users);
   runApp(const App());

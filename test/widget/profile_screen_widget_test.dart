@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
-import 'package:doctoroncall/screens/profile_screen.dart';
-import 'package:doctoroncall/features/image_upload/image_upload_screen.dart';
+import 'package:doctoroncall/screens/shared/profile_screen.dart';
+import 'package:doctoroncall/screens/shared/image_upload_screen.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 
 void main() {

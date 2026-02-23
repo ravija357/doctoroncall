@@ -2,6 +2,7 @@ import 'package:doctoroncall/features/appointments/domain/entities/appointment.d
 
 abstract class AppointmentRepository {
   Future<List<Appointment>> getAppointments(String userId);
+  Future<List<Appointment>> getDoctorAppointments();
   Future<void> bookAppointment(Appointment appointment);
   Future<void> cancelAppointment(String appointmentId);
 }
