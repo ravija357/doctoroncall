@@ -27,10 +27,25 @@ class ProfileScreen extends StatelessWidget {
       body: ValueListenableBuilder(
         valueListenable: box.listenable(),
         builder: (context, Box box, _) {
-          final imageUrl = box.get('profileImage');
-          final firstName = box.get('firstName') ?? 'User';
-          final lastName = box.get('lastName') ?? '';
-          final email = box.get('email') ?? 'No email provided';
+          // Read from the cached UserModel map
+          final userData = box.get('currentUser');
+          final String firstName;
+          final String lastName;
+          final String email;
+          final String? imageUrl;
+
+          if (userData is Map) {
+            firstName = userData['firstName'] ?? 'User';
+            lastName = userData['lastName'] ?? '';
+            email = userData['email'] ?? 'No email provided';
+            imageUrl = userData['profileImage'];
+          } else {
+            // Fallback for legacy format
+            firstName = box.get('firstName') ?? 'User';
+            lastName = box.get('lastName') ?? '';
+            email = box.get('email') ?? 'No email provided';
+            imageUrl = box.get('profileImage');
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -127,10 +142,8 @@ class ProfileScreen extends StatelessWidget {
                   isDestructive: true,
                   onTap: () {
                     context.read<AuthBloc>().add(LogoutRequested());
-                    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const SplashScreen()),
-                      (route) => false,
-                    );
+                    // Pop all pushed routes so the root BlocBuilder shows RoleSelectionScreen
+                    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
                   },
                 ),
               ],

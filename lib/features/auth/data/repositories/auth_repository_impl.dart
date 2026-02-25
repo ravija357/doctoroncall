@@ -21,4 +21,9 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> signUp(UserModel user, String password) async {
     return await remoteDataSource.signUp(user, password);
   }
+
+  @override
+  Future<UserModel?> getCachedUser() async {
+    return await remoteDataSource.getCachedUser();
+  }
 }

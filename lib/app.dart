@@ -8,6 +8,7 @@ import 'package:doctoroncall/screens/doctor/doctor_main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:doctoroncall/theme_data/theme_data.dart';
 import 'package:doctoroncall/features/auth/presentation/bloc/auth_state.dart';
+import 'package:doctoroncall/features/auth/presentation/bloc/auth_event.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:doctoroncall/core/di/injection_container.dart';
@@ -16,6 +17,7 @@ import 'package:doctoroncall/features/messages/presentation/bloc/chat_bloc.dart'
 import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_bloc.dart';
 import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_bloc.dart';
 import 'package:doctoroncall/features/notifications/presentation/bloc/notification_bloc.dart';
+import 'package:doctoroncall/features/notifications/presentation/bloc/notification_event.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -24,7 +26,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>()),
+        BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>()..add(CheckAuthStatus())),
         BlocProvider<ChatBloc>(create: (_) => sl<ChatBloc>()),
         BlocProvider<DoctorBloc>(create: (_) => sl<DoctorBloc>()),
         BlocProvider<AppointmentBloc>(create: (_) => sl<AppointmentBloc>()),
@@ -94,15 +96,33 @@ class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
         if (state is AuthAuthenticated) {
-          return state.user.role == 'DOCTOR'
-              ? const DoctorMainScreen()
-              : const PatientMainScreen();
+          // Connect socket globally on login
+          sl<ChatRemoteDataSource>().connectSocket();
+          // Load initial notifications 
+          context.read<NotificationBloc>().add(LoadNotificationsRequested());
+        } else if (state is AuthUnauthenticated) {
+          // Disconnect on logout
+          sl<ChatRemoteDataSource>().disconnectSocket();
         }
-        return const RoleSelectionScreen();
       },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          if (state is AuthAuthenticated) {
+            return state.user.role == 'DOCTOR'
+                ? const DoctorMainScreen()
+                : const PatientMainScreen();
+          }
+          if (state is AuthLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator(color: Color(0xFF6AA9D8))),
+            );
+          }
+          return const RoleSelectionScreen();
+        },
+      ),
     );
   }
 }

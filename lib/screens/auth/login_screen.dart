@@ -61,10 +61,34 @@ class _LoginScreenState extends State<LoginScreen> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
+            // Enforce portal separation: validate role matches selected portal
+            final selectedPortal = widget.initialRole?.toUpperCase();
+            final userRole = state.user.role.toUpperCase();
+
+            if (selectedPortal != null && userRole != selectedPortal) {
+              // Role mismatch — kick user back
+              context.read<AuthBloc>().add(LogoutRequested());
+              final portalLabel = selectedPortal == 'DOCTOR' ? 'Doctor' : 'Patient';
+              final accountLabel = userRole == 'DOCTOR' ? 'Doctor' : 'Patient';
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'This is the $portalLabel portal. Your account is registered as $accountLabel. Please use the correct portal.',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  backgroundColor: const Color(0xFFE53935),
+                  duration: const Duration(seconds: 4),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+              return;
+            }
+
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => state.user.role == 'DOCTOR'
+                builder: (context) => userRole == 'DOCTOR'
                     ? const DoctorMainScreen()
                     : const PatientMainScreen(),
               ),

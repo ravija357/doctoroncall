@@ -8,6 +8,7 @@ abstract class AppointmentRemoteDataSource {
   Future<List<AppointmentModel>> getDoctorAppointments();
   Future<void> bookAppointment(AppointmentModel appointment);
   Future<void> cancelAppointment(String appointmentId);
+  Future<List<Map<String, dynamic>>> getAvailability(String doctorId, String date);
 }
 
 class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
@@ -31,6 +32,7 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
         message: e.response?.data['message'] ?? e.message ?? 'Failed to connect to server',
       );
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }
@@ -50,6 +52,7 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
         message: e.response?.data?['message']?.toString() ?? e.message ?? 'Failed to connect',
       );
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }
@@ -70,6 +73,7 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
         message: e.response?.data['message'] ?? e.message ?? 'Failed to connect to server',
       );
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }
@@ -87,6 +91,33 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
         message: e.response?.data['message'] ?? e.message ?? 'Failed to connect to server',
       );
     } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAvailability(String doctorId, String date) async {
+    try {
+      final response = await apiClient.dio.get(
+        '/availability',
+        queryParameters: {'doctorId': doctorId, 'date': date},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data['data'];
+        if (data == null) return [];
+        final slots = data['slots'] as List<dynamic>? ?? [];
+        return slots.map((s) => Map<String, dynamic>.from(s)).toList();
+      } else {
+        throw ServerException(message: 'Failed to fetch availability');
+      }
+    } on DioException catch (e) {
+      throw ServerException(
+        message: e.response?.data['message'] ?? e.message ?? 'Failed to fetch availability',
+      );
+    } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException(message: e.toString());
     }
   }

@@ -37,3 +37,11 @@ class AppointmentError extends AppointmentState {
 }
 
 class AppointmentSuccess extends AppointmentState {}
+
+class AvailabilityLoaded extends AppointmentState {
+  final List<Map<String, dynamic>> slots;
+  const AvailabilityLoaded({required this.slots});
+
+  @override
+  List<Object> get props => [slots];
+}

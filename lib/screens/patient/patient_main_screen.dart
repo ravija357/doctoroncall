@@ -16,10 +16,13 @@ import 'package:doctoroncall/features/appointments/presentation/bloc/appointment
 import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
 import 'package:doctoroncall/features/appointments/domain/entities/appointment.dart';
 import 'package:doctoroncall/screens/shared/notification_screen.dart';
+import 'package:doctoroncall/screens/shared/chat_screen.dart';
 import 'package:doctoroncall/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:doctoroncall/features/notifications/presentation/bloc/notification_state.dart';
 import 'package:doctoroncall/features/notifications/presentation/bloc/notification_event.dart';
 import 'package:intl/intl.dart';
+import 'package:doctoroncall/screens/patient/top_doctors_screen.dart';
+import 'package:doctoroncall/screens/patient/book_appointment_screen.dart';
 
 class PatientMainScreen extends StatefulWidget {
   const PatientMainScreen({super.key});
@@ -34,7 +37,13 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
     super.initState();
     context.read<DoctorBloc>().add(LoadDoctorsRequested());
     final box = Hive.box(HiveBoxes.users);
-    final userId = box.get('userId');
+    final userData = box.get('currentUser');
+    final String? userId;
+    if (userData is Map) {
+      userId = userData['id'] as String?;
+    } else {
+      userId = box.get('userId');
+    }
     if (userId != null) {
       context.read<AppointmentBloc>().add(LoadAppointmentsRequested(userId: userId));
     }
@@ -43,7 +52,7 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
 
   List<Widget> get _pages => [
         _HomeDashboardContent(),
-        AppointmentListScreen(),
+        const AppointmentListScreen(isFromBottomNav: true),
         const MessageListScreen(),
       ];
 
@@ -56,32 +65,83 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(child: _pages[_selectedIndex]),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF6AA9D8),
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+      extendBody: true, // Key to allow body to flow under the floating navbar
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF4889A8), // Top dark teal blue
+              Color(0xFFCDE2EC), // Bottom light blue/white mix
+            ],
+            stops: [0.0, 0.5], // Gradient mostly fading in the top half
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            activeIcon: Icon(Icons.calendar_month),
-            label: 'Appointments',
+        ),
+        child: SafeArea(
+          bottom: false, // Don't safely inset bottom so gradient fills edges
+          child: Stack(
+            children: [
+              _pages[_selectedIndex],
+              
+              // Floating Bottom Navigation Bar
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 30, // Hover above the bottom edge
+                child: Container(
+                  height: 70,
+                  decoration: BoxDecoration(
+                    // Semi-transparent frosted glass effect base
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(35),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _onItemTapped(0),
+                          child: _navIcon(Icons.home_outlined, 0),
+                        ),
+                        GestureDetector(
+                          onTap: () => _onItemTapped(1),
+                          child: _navIcon(Icons.calendar_month_outlined, 1),
+                        ),
+                        GestureDetector(
+                          onTap: () => _onItemTapped(2),
+                          child: _navIcon(Icons.medical_services_outlined, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-           BottomNavigationBarItem(
-            icon: Icon(Icons.message_outlined),
-            activeIcon: Icon(Icons.message),
-            label: 'Messages',
-          ),
-        ],
+        ),
       ),
+    );
+  }
+
+  // Helper widget to draw the active grey circle indicator behind the icon
+  Widget _navIcon(IconData icon, int index) {
+    final isActive = _selectedIndex == index;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.grey.shade200 : Colors.transparent,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: isActive ? const Color(0xFF3B4856) : Colors.grey.shade400),
     );
   }
 }
@@ -98,6 +158,22 @@ class _HomeDashboardContent extends StatefulWidget {
 class _HomeDashboardContentState extends State<_HomeDashboardContent> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  String _selectedCategory = 'All';
+
+  static const _categories = [
+    {'label': 'All', 'icon': Icons.grid_view_rounded},
+    {'label': 'General', 'icon': Icons.local_hospital_outlined},
+    {'label': 'Cardiologist', 'icon': Icons.favorite_border},
+    {'label': 'Neurologist', 'icon': Icons.psychology_outlined},
+    {'label': 'Dermatologist', 'icon': Icons.face_retouching_natural},
+    {'label': 'Pediatrician', 'icon': Icons.child_care},
+    {'label': 'Orthopedic', 'icon': Icons.accessibility_new},
+    {'label': 'Gynecologist', 'icon': Icons.pregnant_woman},
+    {'label': 'Psychiatrist', 'icon': Icons.self_improvement},
+    {'label': 'Nutritionist', 'icon': Icons.restaurant_menu},
+    {'label': 'ENT', 'icon': Icons.hearing},
+    {'label': 'Urologist', 'icon': Icons.medical_services_outlined},
+  ];
 
   @override
   void initState() {
@@ -117,16 +193,27 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
   Widget build(BuildContext context) {
     final doctorState = context.watch<DoctorBloc>().state;
     final allDoctors = doctorState is DoctorsLoaded ? doctorState.doctors : <Doctor>[];
-    final filteredDoctors = _query.isEmpty
+
+    // Filter by search query
+    var filteredDoctors = _query.isEmpty
         ? allDoctors
         : allDoctors.where((d) {
             final name = '${d.firstName} ${d.lastName}'.toLowerCase();
-            final spec = (d.specialization ?? '').toLowerCase();
+            final spec = (d.specialization).toLowerCase();
             return name.contains(_query) || spec.contains(_query);
           }).toList();
 
+    // Filter by category
+    if (_selectedCategory != 'All') {
+      filteredDoctors = filteredDoctors.where((d) {
+        final spec = d.specialization.toLowerCase();
+        final cat = _selectedCategory.toLowerCase();
+        return spec.contains(cat) || cat.contains(spec);
+      }).toList();
+    }
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 120), // Bottom padding for floating nav bar
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -137,9 +224,15 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
               Row(
                 children: [
                   ValueListenableBuilder(
-                    valueListenable: Hive.box(HiveBoxes.users).listenable(keys: ['profileImage']),
+                    valueListenable: Hive.box(HiveBoxes.users).listenable(),
                     builder: (context, Box box, _) {
-                      final imageUrl = box.get('profileImage');
+                      final userData = box.get('currentUser');
+                      final String? imageUrl;
+                      if (userData is Map) {
+                        imageUrl = userData['profileImage'];
+                      } else {
+                        imageUrl = box.get('profileImage');
+                      }
                       return GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -158,10 +251,18 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
                   ),
                   const SizedBox(width: 12),
                   ValueListenableBuilder(
-                    valueListenable: Hive.box(HiveBoxes.users).listenable(keys: ['firstName', 'lastName']),
+                    valueListenable: Hive.box(HiveBoxes.users).listenable(),
                     builder: (context, Box box, _) {
-                      final firstName = box.get('firstName', defaultValue: 'User');
-                      final lastName = box.get('lastName', defaultValue: '');
+                      final userData = box.get('currentUser');
+                      final String firstName;
+                      final String lastName;
+                      if (userData is Map) {
+                        firstName = userData['firstName'] ?? 'User';
+                        lastName = userData['lastName'] ?? '';
+                      } else {
+                        firstName = box.get('firstName', defaultValue: 'User');
+                        lastName = box.get('lastName', defaultValue: '');
+                      }
                       
                       final hour = DateTime.now().hour;
                       String greeting = 'Good Morning!';
@@ -176,15 +277,10 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
-                          Text(
-                            greeting,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
-                          ),
+                          const SizedBox(height: 4),
                         ],
                       );
                     },
@@ -205,6 +301,7 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
                       );
                     },
                     child: Stack(
+                      clipBehavior: Clip.none,
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
@@ -213,13 +310,13 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withOpacity(0.04),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          child: const Icon(Icons.notifications_none, color: Color(0xFF6AA9D8)),
+                          child: Icon(Icons.notifications_rounded, color: Colors.grey.shade800, size: 26),
                         ),
                         if (unreadCount > 0)
                           Positioned(
@@ -227,22 +324,25 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
                             top: 0,
                             child: Container(
                               padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF6AA9D8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF3B30), // iOS red color
                                 shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
                               ),
                               constraints: const BoxConstraints(
-                                minWidth: 16,
-                                minHeight: 16,
+                                minWidth: 20,
+                                minHeight: 20,
                               ),
-                              child: Text(
-                                unreadCount > 9 ? '9+' : unreadCount.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                              child: Center(
+                                child: Text(
+                                  unreadCount > 9 ? '9+' : unreadCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
                               ),
                             ),
                           ),
@@ -255,151 +355,156 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
           ),
           const SizedBox(height: 32),
 
-          // --- SEARCH BAR SECTION ---
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(35),
-              boxShadow: [
-                BoxShadow(
-                  color: _query.isNotEmpty
-                      ? const Color(0xFF6AA9D8).withOpacity(0.15)
-                      : Colors.black.withOpacity(0.03),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-              border: Border.all(
-                color: _query.isNotEmpty
-                    ? const Color(0xFF6AA9D8).withOpacity(0.4)
-                    : Colors.transparent,
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF6AA9D8),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.search, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      hintText: 'Search doctors by name or specialty…',
-                      border: InputBorder.none,
-                      hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                    ),
-                  ),
-                ),
-                if (_query.isNotEmpty)
-                  GestureDetector(
-                    onTap: () => _searchController.clear(),
-                    child: const Icon(Icons.close, color: Colors.grey, size: 20),
-                  )
-                else
-                  const Icon(Icons.tune, color: Colors.grey, size: 20),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // --- SECTION: TOP DOCTORS ---
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'Top Doctors',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                'See All',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _TopDoctorBanner(),
-          const SizedBox(height: 32),
-
-          // --- SECTION: UPCOMING APPOINTMENTS ---
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'Upcoming Appointments',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                'See All',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: const [
-                _FilterChip(label: 'All', isSelected: true),
-                _FilterChip(label: 'General'),
-                _FilterChip(label: 'Specialist'),
-                _FilterChip(label: 'Pediatrics'),
-                _FilterChip(label: 'Nutritionist'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
+          // --- UPCOMING APPOINTMENT SECTION ---
           BlocBuilder<AppointmentBloc, AppointmentState>(
             builder: (context, state) {
-              if (state is AppointmentLoading) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (state is AppointmentError) {
-                return Center(child: Text(state.message));
-              } else if (state is AppointmentsLoaded) {
-                final upcoming = state.appointments.where((a) => a.dateTime.isAfter(DateTime.now())).toList();
-                if (upcoming.isEmpty) {
-                  return const Center(child: Text('No upcoming appointments.'));
+              if (state is AppointmentsLoaded && state.appointments.isNotEmpty) {
+                // Find nearest upcoming appointment
+                final upcoming = state.appointments
+                    .where((a) => a.dateTime.isAfter(DateTime.now().subtract(const Duration(days: 1))) && ['scheduled', 'confirmed', 'pending'].contains(a.status))
+                    .toList();
+                
+                if (upcoming.isNotEmpty) {
+                  upcoming.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+                  return Column(
+                    children: [
+                      const Center(
+                        child: Text(
+                          'Upcoming Appointments',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _UpcomingAppointmentCard(appointment: upcoming.first),
+                      const SizedBox(height: 32),
+                    ],
+                  );
                 }
-                return ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: upcoming.length > 3 ? 3 : upcoming.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    final ap = upcoming[index];
-                    return _UpcomingAppointmentCard(appointment: ap);
-                  },
-                );
               }
               return const SizedBox.shrink();
             },
           ),
-          const SizedBox(height: 32),
-
-          // --- SECTION: AVAILABLE DOCTORS (filtered by search) ---
+          // --- SECTION: SPECIALTIES ---
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                _query.isEmpty ? 'Available Doctors' : 'Search Results',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              const Text(
+                'Doctor Specialty',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
               ),
-              if (_query.isNotEmpty)
-                Text(
-                  '${filteredDoctors.length} found',
-                  style: const TextStyle(color: Color(0xFF6AA9D8), fontSize: 14, fontWeight: FontWeight.w600),
-                )
-              else
-                const Text('See All', style: TextStyle(color: Colors.grey, fontSize: 14)),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TopDoctorsScreen()),
+                  );
+                },
+                child: const Text(
+                  'View Details',
+                  style: TextStyle(color: Color(0xFF32789D), fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 50,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _categories.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final cat = _categories[index];
+                final isSelected = _selectedCategory == cat['label'];
+                
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedCategory = cat['label'] as String),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSelected ? 20 : 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFF32789D) : Colors.white,
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        if (isSelected)
+                          BoxShadow(
+                            color: const Color(0xFF32789D).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          )
+                        else
+                           BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                         Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected ? Colors.transparent : Colors.grey.shade200,
+                            ),
+                          ),
+                          child: Icon(
+                            cat['icon'] as IconData,
+                            color: const Color(0xFF32789D),
+                            size: 18,
+                          ),
+                        ),
+                        if (isSelected) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            cat['label'] as String,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // --- SECTION: POPULAR DOCTOR ---
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Popular Doctor',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TopDoctorsScreen()),
+                  );
+                },
+                child: const Text(
+                  'View Details',
+                  style: TextStyle(color: Color(0xFF32789D), fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -413,12 +518,20 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Column(
                   children: [
-                    const Icon(Icons.search_off, size: 48, color: Colors.grey),
+                    Icon(
+                      _selectedCategory != 'All'
+                          ? (_categories.firstWhere((c) => c['label'] == _selectedCategory)['icon'] as IconData)
+                          : Icons.search_off,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
                     const SizedBox(height: 12),
                     Text(
-                      _query.isEmpty
-                          ? 'No doctors available right now.'
-                          : 'No doctors found for "$_query"',
+                      _selectedCategory != 'All'
+                          ? 'No $_selectedCategory doctors available'
+                          : (_query.isEmpty
+                              ? 'No doctors available right now.'
+                              : 'No doctors found for "$_query"'),
                       style: const TextStyle(color: Colors.grey, fontSize: 14),
                       textAlign: TextAlign.center,
                     ),
@@ -434,7 +547,20 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
               separatorBuilder: (_, __) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
                 final doctor = filteredDoctors[index];
-                return _DoctorCard(doctor: doctor);
+                return TweenAnimationBuilder(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: Duration(milliseconds: 300 + (index * 150).clamp(0, 900)),
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: Opacity(
+                        opacity: value,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: _DoctorCard(doctor: doctor),
+                );
               },
             ),
           const SizedBox(height: 24),
@@ -446,250 +572,145 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
 
 
 
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-
-  const _FilterChip({required this.label, this.isSelected = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF6AA9D8) : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isSelected ? Colors.transparent : Colors.grey.shade200),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.grey,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-    );
-  }
-}
-
-class _TopDoctorBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6AA9D8), Color(0xFF4A8ABC)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        image: const DecorationImage(
-                          image: AssetImage('assets/images/doctor-image3.png'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              _BannerTag(label: 'Urologist'),
-                              const SizedBox(width: 8),
-                              _BannerTag(label: '\$60/Session'),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Tatiana Bergson',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: const [
-                              Icon(Icons.star, color: Colors.orange, size: 18),
-                              SizedBox(width: 4),
-                              Text('4.9', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.favorite_border, color: Colors.white),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                // DATE SELECTOR
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    _DateItem(day: 'M', date: '12'),
-                    _DateItem(day: 'T', date: '13'),
-                    _DateItem(day: 'W', date: '14'),
-                    _DateItem(day: 'T', date: '15'),
-                    _DateItem(day: 'F', date: '16', isSelected: true),
-                    _DateItem(day: 'S', date: '17'),
-                    _DateItem(day: 'S', date: '18'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BannerTag extends StatelessWidget {
-  final String label;
-  _BannerTag({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 10)),
-    );
-  }
-}
-
-class _DateItem extends StatelessWidget {
-  final String day;
-  final String date;
-  final bool isSelected;
-
-  const _DateItem({required this.day, required this.date, this.isSelected = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.white : Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        children: [
-          Text(day, style: TextStyle(color: isSelected ? const Color(0xFF6AA9D8) : Colors.white, fontSize: 12)),
-          const SizedBox(height: 4),
-          Text(date, style: TextStyle(color: isSelected ? const Color(0xFF6AA9D8) : Colors.white, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-}
-
 class _DoctorCard extends StatelessWidget {
   final Doctor doctor;
 
-  const _DoctorCard({
-    required this.doctor,
-  });
+  const _DoctorCard({required this.doctor});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DoctorProfileScreen(doctor: doctor),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              image: doctor.image != null
-                  ? DecorationImage(image: NetworkImage(doctor.image!), fit: BoxFit.cover)
-                  : null,
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        height: 160,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9), // Frosted glass back
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
-            child: doctor.image == null ? const Icon(Icons.person, size: 40) : null,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Dr. ${doctor.firstName} ${doctor.lastName}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Left Content: Text & Ratings
+            Padding(
+              padding: const EdgeInsets.only(left: 20, top: 24, bottom: 20, right: 140),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                   Text(
+                    'Dr. ${doctor.firstName}\n${doctor.lastName}',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                      letterSpacing: -0.5,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  '${doctor.specialization} Specialist',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: const [
-                    Icon(Icons.star, color: Colors.orange, size: 16),
-                    SizedBox(width: 4),
-                    Text('4.9', style: TextStyle(fontWeight: FontWeight.bold)),
-                    SizedBox(width: 8),
-                    Text('(73 Reviews)', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DoctorProfileScreen(doctor: doctor),
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF6AA9D8).withOpacity(0.1),
-                shape: BoxShape.circle,
+                  const SizedBox(height: 8),
+                  Text(
+                    doctor.specialization,
+                    style: TextStyle(
+                      color: Colors.grey.shade700, 
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, color: Color(0xFFFFB300), size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          doctor.averageRating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.north_east, color: Color(0xFF6AA9D8), size: 20),
             ),
-          ),
-        ],
+            
+            // Right Content: Doctor Cutout Image Background shape
+            Positioned(
+              right: 0,
+              bottom: 0,
+              top: 0,
+              width: 130, // Background shape behind doctor
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+                child: Container(
+                   decoration: const BoxDecoration(
+                      color: Colors.transparent, 
+                   ),
+                ),
+              ),
+            ),
+
+            Positioned(
+              right: 15,
+              bottom: 0,
+              child: doctor.image != null && doctor.image!.isNotEmpty && ImageUtils.getImageProvider(doctor.image) != null
+                  ? Image(
+                      image: ImageUtils.getImageProvider(doctor.image)!,
+                      height: 140, // Needs to be slightly taller than container or sit perfectly
+                      fit: BoxFit.contain,
+                      alignment: Alignment.bottomRight,
+                    )
+                  : Image.asset(
+                      'assets/images/doctor-image3.png',
+                      height: 140,
+                      fit: BoxFit.contain,
+                      alignment: Alignment.bottomRight,
+                    ),
+            ),
+
+            // Top Right: Favorite Action Icon
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6AA9D8).withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.favorite, color: Color(0xFF32789D), size: 20),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -701,47 +722,203 @@ class _UpcomingAppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Read populated fields from the appointment model
+    final doctorName = appointment.doctorName != null ? 'Doctor ${appointment.doctorName}' : 'Doctor';
+    final doctorImage = appointment.doctorImage;
+    final doctorSpecialty = appointment.specialization ?? 'Specialist';
+    
+    // Formatting date matching the screenshot
+    final formattedDate = DateFormat('d MMMM EEEE').format(appointment.dateTime);
+    final formattedTime = DateFormat('h:mm a').format(appointment.dateTime).toLowerCase();
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
+        color: Colors.white.withOpacity(0.9), // Frosted glass look
+        borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6AA9D8).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.access_time_filled, color: Color(0xFF6AA9D8), size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Appointment',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          // Top Row: Doctor Info
+          Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  shape: BoxShape.circle,
+                  image: doctorImage != null && doctorImage.isNotEmpty && ImageUtils.getImageProvider(doctorImage) != null
+                      ? DecorationImage(
+                          image: ImageUtils.getImageProvider(doctorImage)!,
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
-                Text(
-                  DateFormat('MMM d, h:mm a').format(appointment.dateTime),
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                child: (doctorImage == null || doctorImage.isEmpty || ImageUtils.getImageProvider(doctorImage) == null) 
+                    ? const Icon(Icons.person, color: Colors.grey) 
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      doctorName,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      doctorSpecialty,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  if (appointment.doctorId.isNotEmpty) {
+                    final doctorState = context.read<DoctorBloc>().state;
+                    if (doctorState is DoctorsLoaded) {
+                      try {
+                        final doctor = doctorState.doctors.firstWhere((d) => d.id == appointment.doctorId);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => DoctorProfileScreen(doctor: doctor)));
+                      } catch (e) {
+                         // Doctor not found in bloc
+                      }
+                    }
+                  }
+                },
+                child: const Text(
+                  'View Details',
+                  style: TextStyle(
+                    color: Color(0xFF32789D),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+          const SizedBox(height: 24),
+          
+          // Middle Row: Date & Time
+          Row(
+            children: [
+              const Icon(Icons.calendar_month_outlined, size: 20, color: Colors.grey),
+              const SizedBox(width: 8),
+              Text(
+                formattedDate,
+                style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(width: 24),
+              const Icon(Icons.access_time_outlined, size: 20, color: Colors.grey),
+              const SizedBox(width: 8),
+              Text(
+                formattedTime,
+                style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Bottom Row: Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    final doctorState = context.read<DoctorBloc>().state;
+                    if (doctorState is DoctorsLoaded) {
+                      try {
+                        final doctor = doctorState.doctors.firstWhere((d) => d.id == appointment.doctorId);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider.value(
+                              value: context.read<AppointmentBloc>(),
+                              child: BookAppointmentScreen(doctor: doctor),
+                            ),
+                          ),
+                        );
+                      } catch (_) {}
+                    }
+                  },
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(color: Colors.grey.shade300, width: 1.5),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'Reschedule',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                     Navigator.push(
+                       context,
+                       MaterialPageRoute(
+                         builder: (_) => ChatScreen(
+                           otherUserId: appointment.doctorId,
+                           otherUserName: doctorName,
+                         ),
+                       ),
+                     );
+                  },
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF246C92), // Solid dark blue
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.videocam, color: Colors.white, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Join Now',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

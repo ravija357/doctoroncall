@@ -19,15 +19,8 @@ class _SignupScreenState extends State<SignupScreen> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isDoctor = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.initialRole == 'DOCTOR') {
-      _isDoctor = true;
-    }
-  }
+  // Role is locked based on which portal was selected — no manual toggle
+  late final bool _isDoctor = widget.initialRole?.toUpperCase() == 'DOCTOR';
 
   @override
   void dispose() {
@@ -72,10 +65,11 @@ class _SignupScreenState extends State<SignupScreen> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
+            final userRole = state.user.role.toUpperCase();
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                builder: (context) => state.user.role == 'DOCTOR'
+                builder: (context) => userRole == 'DOCTOR'
                     ? const DoctorMainScreen()
                     : const PatientMainScreen(),
               ),
@@ -140,27 +134,31 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: 24),
 
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
+              // Role badge — locked to selected portal
+              Container(
+                width: size.width * 0.8,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6AA9D8).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF6AA9D8).withOpacity(0.3)),
+                ),
                 child: Row(
                   children: [
-                    const Text(
-                      'Register as Doctor',
-                      style: TextStyle(
-                        fontFamily: 'PlayfairDisplay',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    Icon(
+                      _isDoctor ? Icons.medical_services_outlined : Icons.person_outline,
+                      color: const Color(0xFF6AA9D8),
+                      size: 24,
                     ),
-                    const Spacer(),
-                    Switch(
-                      value: _isDoctor,
-                      onChanged: (value) {
-                        setState(() {
-                          _isDoctor = value;
-                        });
-                      },
-                      activeThumbColor: const Color(0xFF6AA9D8),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Registering as ${_isDoctor ? 'Doctor' : 'Patient'}',
+                      style: const TextStyle(
+                        fontFamily: 'PlayfairDisplay',
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6AA9D8),
+                      ),
                     ),
                   ],
                 ),

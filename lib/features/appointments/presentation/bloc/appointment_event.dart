@@ -36,3 +36,12 @@ class CancelAppointmentRequested extends AppointmentEvent {
   @override
   List<Object> get props => [appointmentId, userId];
 }
+
+class LoadAvailabilityRequested extends AppointmentEvent {
+  final String doctorId;
+  final String date;
+  const LoadAvailabilityRequested({required this.doctorId, required this.date});
+
+  @override
+  List<Object> get props => [doctorId, date];
+}

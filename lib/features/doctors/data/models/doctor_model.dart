@@ -1,20 +1,83 @@
+import 'package:hive/hive.dart';
 import '../../domain/entities/doctor.dart';
 
+@HiveType(typeId: 2)
 class DoctorModel extends Doctor {
-  const DoctorModel({
-    required super.id,
-    required super.userId,
-    required super.firstName,
-    required super.lastName,
-    super.image,
-    required super.specialization,
-    required super.experience,
-    required super.bio,
+  @HiveField(0)
+  final String hiveId;
+
+  @HiveField(1)
+  final String hiveUserId;
+
+  @HiveField(2)
+  final String hiveFirstName;
+
+  @HiveField(3)
+  final String hiveLastName;
+
+  @HiveField(4)
+  final String? hiveImage;
+
+  @HiveField(5)
+  final String hiveSpecialization;
+
+  @HiveField(6)
+  final int hiveExperience;
+
+  @HiveField(7)
+  final String hiveBio;
+
+  @HiveField(8)
+  final double hiveFees;
+
+  @HiveField(9)
+  final String? hiveHospital;
+
+  @HiveField(10)
+  final double hiveAverageRating;
+
+  @HiveField(11)
+  final int hiveTotalReviews;
+
+  DoctorModel({
+    required String id,
+    required String userId,
+    required String firstName,
+    required String lastName,
+    String? image,
+    required String specialization,
+    required int experience,
+    required String bio,
     required double fees,
-    super.hospital,
+    String? hospital,
     required double averageRating,
     required int totalReviews,
-  }) : super(fees: fees, averageRating: averageRating, totalReviews: totalReviews);
+  })  : hiveId = id,
+        hiveUserId = userId,
+        hiveFirstName = firstName,
+        hiveLastName = lastName,
+        hiveImage = image,
+        hiveSpecialization = specialization,
+        hiveExperience = experience,
+        hiveBio = bio,
+        hiveFees = fees,
+        hiveHospital = hospital,
+        hiveAverageRating = averageRating,
+        hiveTotalReviews = totalReviews,
+        super(
+          id: id,
+          userId: userId,
+          firstName: firstName,
+          lastName: lastName,
+          image: image,
+          specialization: specialization,
+          experience: experience,
+          bio: bio,
+          fees: fees,
+          hospital: hospital,
+          averageRating: averageRating,
+          totalReviews: totalReviews,
+        );
 
   factory DoctorModel.fromJson(Map<String, dynamic> json) {
     final user = json['user'] ?? {};
@@ -31,6 +94,40 @@ class DoctorModel extends Doctor {
       hospital: json['hospital'],
       averageRating: (json['averageRating'] ?? 0).toDouble(),
       totalReviews: json['totalReviews'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toHiveMap() {
+    return {
+      'id': id,
+      'userId': userId,
+      'firstName': firstName,
+      'lastName': lastName,
+      'image': image,
+      'specialization': specialization,
+      'experience': experience,
+      'bio': bio,
+      'fees': fees,
+      'hospital': hospital,
+      'averageRating': averageRating,
+      'totalReviews': totalReviews,
+    };
+  }
+
+  factory DoctorModel.fromHiveMap(Map<dynamic, dynamic> map) {
+    return DoctorModel(
+      id: map['id'] as String? ?? '',
+      userId: map['userId'] as String? ?? '',
+      firstName: map['firstName'] as String? ?? '',
+      lastName: map['lastName'] as String? ?? '',
+      image: map['image'] as String?,
+      specialization: map['specialization'] as String? ?? '',
+      experience: map['experience'] as int? ?? 0,
+      bio: map['bio'] as String? ?? '',
+      fees: (map['fees'] as num?)?.toDouble() ?? 0,
+      hospital: map['hospital'] as String?,
+      averageRating: (map['averageRating'] as num?)?.toDouble() ?? 0,
+      totalReviews: map['totalReviews'] as int? ?? 0,
     );
   }
 }

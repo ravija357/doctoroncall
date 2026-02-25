@@ -1,15 +1,32 @@
 import 'package:doctoroncall/features/messages/data/datasources/chat_remote_data_source.dart';
+import 'package:doctoroncall/features/messages/data/datasources/chat_local_data_source.dart';
 import 'package:doctoroncall/features/messages/data/models/chat_contact_model.dart';
 import 'package:doctoroncall/features/messages/domain/entities/message.dart';
 import 'package:doctoroncall/features/messages/domain/repositories/chat_repository.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
   final ChatRemoteDataSource remoteDataSource;
+  final ChatLocalDataSource localDataSource;
 
-  ChatRepositoryImpl({required this.remoteDataSource});
+  ChatRepositoryImpl({
+    required this.remoteDataSource,
+    required this.localDataSource,
+  });
 
   @override
-  Future<List<ChatContact>> getContacts() => remoteDataSource.getContacts();
+  Future<List<ChatContact>> getContacts() async {
+    try {
+      final contacts = await remoteDataSource.getContacts();
+      // Cache on success
+      await localDataSource.cacheContacts(contacts);
+      return contacts;
+    } catch (e) {
+      // Fallback to cache
+      final cached = localDataSource.getCachedContacts();
+      if (cached.isNotEmpty) return cached;
+      rethrow;
+    }
+  }
 
   @override
   Future<List<Message>> getMessages(String userId) => remoteDataSource.getMessages(userId);

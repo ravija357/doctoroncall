@@ -12,6 +12,7 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     on<LoadDoctorAppointmentsRequested>(_onLoadDoctorAppointmentsRequested);
     on<BookAppointmentRequested>(_onBookAppointmentRequested);
     on<CancelAppointmentRequested>(_onCancelAppointmentRequested);
+    on<LoadAvailabilityRequested>(_onLoadAvailabilityRequested);
   }
 
   Future<void> _onLoadAppointmentsRequested(
@@ -66,6 +67,21 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     try {
       await repository.cancelAppointment(event.appointmentId);
       add(LoadAppointmentsRequested(userId: event.userId));
+    } on ServerException catch (e) {
+      emit(AppointmentError(message: e.message));
+    } catch (e) {
+      emit(AppointmentError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onLoadAvailabilityRequested(
+    LoadAvailabilityRequested event,
+    Emitter<AppointmentState> emit,
+  ) async {
+    emit(AppointmentLoading());
+    try {
+      final slots = await repository.getAvailability(event.doctorId, event.date);
+      emit(AvailabilityLoaded(slots: slots));
     } on ServerException catch (e) {
       emit(AppointmentError(message: e.message));
     } catch (e) {

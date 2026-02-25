@@ -19,7 +19,7 @@ class AuthRemoteDataSource {
           'lastName': user.lastName,
           'email': user.email,
           'password': password,
-          'role': user.role, // 'PATIENT' or 'DOCTOR' based on your index.ts routes/models
+          'role': user.role,
         },
       );
       
@@ -43,7 +43,6 @@ class AuthRemoteDataSource {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        // The backend should return { token: '...', user: {...} }
         final token = data['token'];
         
         // Save the JWT token
@@ -53,16 +52,14 @@ class AuthRemoteDataSource {
         final userId = user['id'];
         await apiClient.secureStorage.write(key: 'user_id', value: userId);
 
-        // Sync user info to Hive for real-time UI
-        final box = Hive.box(HiveBoxes.users);
-        await box.put('userId', user['id']);
-        await box.put('firstName', user['firstName']);
-        await box.put('lastName', user['lastName']);
-        await box.put('email', user['email']);
-        await box.put('role', user['role']);
+        // Build the UserModel
+        final userModel = UserModel.fromMap(data['user']);
 
-        // Return the user model
-        return UserModel.fromMap(data['user']);
+        // Cache full UserModel in Hive
+        final box = Hive.box(HiveBoxes.users);
+        await box.put('currentUser', userModel.toMap());
+
+        return userModel;
       } else {
         throw ServerException(message: 'Failed to login');
       }
@@ -73,9 +70,37 @@ class AuthRemoteDataSource {
     }
   }
 
+  /// Read the cached user from Hive for auto-login
+  Future<UserModel?> getCachedUser() async {
+    final box = Hive.box(HiveBoxes.users);
+    final userData = box.get('currentUser');
+    if (userData == null) return null;
+
+    // Also check if JWT token still exists
+    final token = await apiClient.secureStorage.read(key: 'jwt_token');
+    if (token == null) return null;
+
+    return UserModel.fromMap(Map<dynamic, dynamic>.from(userData));
+  }
+
   Future<void> logout() async {
     // Delete the token and user ID
     await apiClient.secureStorage.delete(key: 'jwt_token');
     await apiClient.secureStorage.delete(key: 'user_id');
+
+    // Clear all Hive boxes
+    await Hive.box(HiveBoxes.users).clear();
+    if (Hive.isBoxOpen(HiveBoxes.appointments)) {
+      await Hive.box(HiveBoxes.appointments).clear();
+    }
+    if (Hive.isBoxOpen(HiveBoxes.doctors)) {
+      await Hive.box(HiveBoxes.doctors).clear();
+    }
+    if (Hive.isBoxOpen(HiveBoxes.notifications)) {
+      await Hive.box(HiveBoxes.notifications).clear();
+    }
+    if (Hive.isBoxOpen(HiveBoxes.chatContacts)) {
+      await Hive.box(HiveBoxes.chatContacts).clear();
+    }
   }
 }

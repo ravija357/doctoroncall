@@ -49,10 +49,18 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                     ),
                   ),
                   ValueListenableBuilder(
-                    valueListenable: Hive.box(HiveBoxes.users).listenable(keys: ['firstName', 'lastName']),
+                    valueListenable: Hive.box(HiveBoxes.users).listenable(),
                     builder: (context, Box box, _) {
-                      final firstName = box.get('firstName', defaultValue: 'Doctor');
-                      final lastName = box.get('lastName', defaultValue: '');
+                      final userData = box.get('currentUser');
+                      final String firstName;
+                      final String lastName;
+                      if (userData is Map) {
+                        firstName = userData['firstName'] ?? 'Doctor';
+                        lastName = userData['lastName'] ?? '';
+                      } else {
+                        firstName = box.get('firstName', defaultValue: 'Doctor');
+                        lastName = box.get('lastName', defaultValue: '');
+                      }
                       return Text(
                         'Welcome, Dr. $firstName $lastName',
                         style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
@@ -64,9 +72,15 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               Row(
                 children: [
                   ValueListenableBuilder(
-                    valueListenable: Hive.box(HiveBoxes.users).listenable(keys: ['profileImage']),
+                    valueListenable: Hive.box(HiveBoxes.users).listenable(),
                     builder: (context, Box box, _) {
-                      final imageUrl = box.get('profileImage');
+                      final userData = box.get('currentUser');
+                      final String? imageUrl;
+                      if (userData is Map) {
+                        imageUrl = userData['profileImage'];
+                      } else {
+                        imageUrl = box.get('profileImage');
+                      }
                       return GestureDetector(
                         onTap: () => Navigator.push(context,
                             MaterialPageRoute(builder: (_) => const ProfileScreen())),
@@ -86,32 +100,41 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                       return GestureDetector(
                         onTap: () => Navigator.push(context,
                             MaterialPageRoute(builder: (_) => const NotificationScreen())),
-                        child: Stack(children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                              ),
+                              child: Icon(Icons.notifications_rounded, color: Colors.grey.shade800, size: 26),
                             ),
-                            child: const Icon(Icons.notifications_none, color: Color(0xFF6AA9D8)),
-                          ),
-                          if (unread > 0)
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(color: Color(0xFF6AA9D8), shape: BoxShape.circle),
-                                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                                child: Text(
-                                  unread > 9 ? '9+' : unread.toString(),
-                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                                  textAlign: TextAlign.center,
+                            if (unread > 0)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFF3B30),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                  ),
+                                  constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                                  child: Center(
+                                    child: Text(
+                                      unread > 9 ? '9+' : unread.toString(),
+                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                        ]),
+                          ],
+                        ),
                       );
                     },
                   ),

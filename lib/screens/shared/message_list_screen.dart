@@ -4,6 +4,7 @@ import 'package:doctoroncall/features/messages/presentation/bloc/chat_bloc.dart'
 import 'package:doctoroncall/features/messages/presentation/bloc/chat_event.dart';
 import 'package:doctoroncall/features/messages/presentation/bloc/chat_state.dart';
 import 'package:doctoroncall/screens/shared/chat_screen.dart';
+import 'package:doctoroncall/core/utils/image_utils.dart';
 
 class MessageListScreen extends StatefulWidget {
   const MessageListScreen({super.key});
@@ -65,7 +66,7 @@ class _MessageListScreenState extends State<MessageListScreen> {
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundImage: contact.image != null 
-                        ? NetworkImage(contact.image!) 
+                        ? ImageUtils.getImageProvider(contact.image) 
                         : null,
                     child: contact.image == null 
                         ? const Icon(Icons.person) 

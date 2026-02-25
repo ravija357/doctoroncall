@@ -68,7 +68,17 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
 
         // ✅ SAVE IMAGE URL FOR PROFILE LOGO
         final box = Hive.box(HiveBoxes.users);
+        
+        // Update loose key for legacy
         box.put('profileImage', imageUrl);
+        
+        // Update the full currentUser map so ProfileScreen reacts instantly
+        final userData = box.get('currentUser');
+        if (userData is Map) {
+          final updatedUser = Map<dynamic, dynamic>.from(userData);
+          updatedUser['profileImage'] = imageUrl;
+          box.put('currentUser', updatedUser);
+        }
 
         setState(() {
           _serverImageUrl = imageUrl;
