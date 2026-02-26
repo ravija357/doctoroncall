@@ -10,18 +10,23 @@ import 'package:doctoroncall/core/constants/api_constants.dart';
 abstract class ChatRemoteDataSource {
   Future<List<ChatContact>> getContacts();
   Future<List<MessageModel>> getMessages(String userId);
+  Future<void> markAsRead(String senderId);
   void connectSocket();
   void disconnectSocket();
   void emitSendMessage(String receiverId, String content);
   Stream<MessageModel> get messageStream;
+  Stream<String> get messageDeletedStream;
   Stream<dynamic> get notificationStream;
   bool get isConnected;
 
   // Delete & clear
   void emitDeleteMessage({required String messageId, required String receiverId, required bool forEveryone});
   void emitClearChat({required String receiverId, required bool forEveryone});
-  Stream<String> get messageDeletedStream;
   Stream<void> get chatClearedStream;
+  Stream<dynamic> get appointmentSyncStream;
+  Stream<dynamic> get notificationSyncStream;
+  Stream<dynamic> get doctorSyncStream;
+  Stream<dynamic> get scheduleSyncStream;
 
   /// Upload a file/image, returns the saved message JSON from the server
   Future<MessageModel> uploadFile({required String filePath, required String receiverId, required String type});
@@ -48,6 +53,10 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   final StreamController<String> _callEndedController = StreamController<String>.broadcast();
   final StreamController<String> _messageDeletedController = StreamController<String>.broadcast();
   final StreamController<void> _chatClearedController = StreamController<void>.broadcast();
+  final StreamController<dynamic> _appointmentSyncController = StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _notificationSyncController = StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _doctorSyncController = StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _scheduleSyncController = StreamController<dynamic>.broadcast();
 
   ChatRemoteDataSourceImpl({required this.apiClient});
 
@@ -77,6 +86,18 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
   @override
   Stream<void> get chatClearedStream => _chatClearedController.stream;
+
+  @override
+  Stream<dynamic> get appointmentSyncStream => _appointmentSyncController.stream;
+
+  @override
+  Stream<dynamic> get notificationSyncStream => _notificationSyncController.stream;
+
+  @override
+  Stream<dynamic> get doctorSyncStream => _doctorSyncController.stream;
+
+  @override
+  Stream<dynamic> get scheduleSyncStream => _scheduleSyncController.stream;
 
   @override
   void connectSocket() async {
@@ -170,6 +191,26 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
     _socket?.on('chat_cleared', (data) {
       _chatClearedController.add(null);
+    });
+
+    _socket?.on('appointment_sync', (data) {
+      print('[SOCKET] Appointment Sync Received: $data');
+      _appointmentSyncController.add(data);
+    });
+
+    _socket?.on('notification_sync', (data) {
+      print('[SOCKET] Notification Sync Received: $data');
+      _notificationSyncController.add(data);
+    });
+
+    _socket?.on('profile_sync', (data) {
+      print('[SOCKET] Profile Sync Received: $data');
+      _doctorSyncController.add(data);
+    });
+
+    _socket?.on('schedule_sync', (data) {
+      print('[SOCKET] Schedule Sync Received: $data');
+      _scheduleSyncController.add(data);
     });
 
     // Server sends 'message_sent' back to sender as confirmation after DB save.
@@ -358,6 +399,21 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       );
     } catch (e) {
       throw ServerException(message: 'Message loading error: ${e.runtimeType}');
+    }
+  }
+
+  @override
+  Future<void> markAsRead(String senderId) async {
+    try {
+      await apiClient.dio.put('/messages/read/$senderId');
+    } on DioException catch (e) {
+      throw ServerException(
+        message: e.response?.data?['message']?.toString() ??
+            e.message ??
+            'Failed to mark messages as read',
+      );
+    } catch (e) {
+      throw ServerException(message: 'Mark as read error: ${e.runtimeType}');
     }
   }
 }

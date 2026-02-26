@@ -1,9 +1,12 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:doctoroncall/screens/shared/profile_screen.dart';
 import 'package:doctoroncall/screens/patient/appointment_list_screen.dart';
 import 'package:doctoroncall/screens/shared/doctor_profile_screen.dart';
 import 'package:doctoroncall/screens/shared/message_list_screen.dart';
+import 'package:doctoroncall/screens/patient/medical_records_screen.dart';
+import 'package:doctoroncall/screens/patient/prescriptions_screen.dart';
 import 'package:doctoroncall/core/utils/image_utils.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -20,9 +23,13 @@ import 'package:doctoroncall/screens/shared/chat_screen.dart';
 import 'package:doctoroncall/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:doctoroncall/features/notifications/presentation/bloc/notification_state.dart';
 import 'package:doctoroncall/features/notifications/presentation/bloc/notification_event.dart';
+import 'package:doctoroncall/features/messages/presentation/bloc/chat_bloc.dart';
+import 'package:doctoroncall/features/messages/presentation/bloc/chat_state.dart';
+import 'package:doctoroncall/features/messages/presentation/bloc/chat_event.dart';
 import 'package:intl/intl.dart';
 import 'package:doctoroncall/screens/patient/top_doctors_screen.dart';
 import 'package:doctoroncall/screens/patient/book_appointment_screen.dart';
+import 'package:doctoroncall/core/di/injection_container.dart' as di;
 
 class PatientMainScreen extends StatefulWidget {
   const PatientMainScreen({super.key});
@@ -32,10 +39,15 @@ class PatientMainScreen extends StatefulWidget {
 }
 
 class _PatientMainScreenState extends State<PatientMainScreen> {
+  int _unreadMessageCount = 0;
+
   @override
   void initState() {
     super.initState();
     context.read<DoctorBloc>().add(LoadDoctorsRequested());
+    // Connect socket & load contacts so we can get unread counts
+    context.read<ChatBloc>().add(ConnectSocketRequested());
+    context.read<ChatBloc>().add(const LoadContactsRequested());
     final box = Hive.box(HiveBoxes.users);
     final userData = box.get('currentUser');
     final String? userId;
@@ -48,6 +60,7 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
       context.read<AppointmentBloc>().add(LoadAppointmentsRequested(userId: userId));
     }
   }
+
   int _selectedIndex = 0;
 
   List<Widget> get _pages => [
@@ -57,6 +70,10 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
       ];
 
   void _onItemTapped(int index) {
+    if (index == 2) {
+      // Clear unread count when navigating to messages
+      setState(() => _unreadMessageCount = 0);
+    }
     setState(() {
       _selectedIndex = index;
     });
@@ -64,84 +81,200 @@ class _PatientMainScreenState extends State<PatientMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true, // Key to allow body to flow under the floating navbar
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4889A8), // Top dark teal blue
-              Color(0xFFCDE2EC), // Bottom light blue/white mix
-            ],
-            stops: [0.0, 0.5], // Gradient mostly fading in the top half
+    return BlocListener<ChatBloc, ChatState>(
+      listener: (context, state) {
+        // Count total unread from all contacts when NOT in messages tab
+        if (state is ContactsLoaded && _selectedIndex != 2) {
+          final totalUnread = state.contacts.fold<int>(0, (sum, c) => sum + c.unread);
+          if (totalUnread != _unreadMessageCount) {
+            setState(() => _unreadMessageCount = totalUnread);
+          }
+        }
+      },
+      child: Scaffold(
+        extendBody: true,
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF4889A8),
+                Color(0xFFCDE2EC),
+              ],
+              stops: [0.0, 0.5],
+            ),
           ),
-        ),
-        child: SafeArea(
-          bottom: false, // Don't safely inset bottom so gradient fills edges
-          child: Stack(
-            children: [
-              _pages[_selectedIndex],
-              
-              // Floating Bottom Navigation Bar
-              Positioned(
-                left: 20,
-                right: 20,
-                bottom: 30, // Hover above the bottom edge
-                child: Container(
-                  height: 70,
-                  decoration: BoxDecoration(
-                    // Semi-transparent frosted glass effect base
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(35),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+          child: SafeArea(
+            bottom: false,
+            child: Stack(
+              children: [
+                _pages[_selectedIndex],
+
+                // Floating Premium Bottom Navigation Bar
+                Positioned(
+                  left: 20,
+                  right: 20,
+                  bottom: 25,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        height: 70,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _NavItem(
+                                icon: Icons.home_rounded,
+                                activeIcon: Icons.home_rounded,
+                                index: 0,
+                                selectedIndex: _selectedIndex,
+                                onTap: () => _onItemTapped(0),
+                              ),
+                              _NavItem(
+                                icon: Icons.calendar_today_rounded,
+                                activeIcon: Icons.calendar_month_rounded,
+                                index: 1,
+                                selectedIndex: _selectedIndex,
+                                onTap: () => _onItemTapped(1),
+                              ),
+                              _NavItem(
+                                icon: Icons.forum_outlined,
+                                activeIcon: Icons.forum_rounded,
+                                index: 2,
+                                selectedIndex: _selectedIndex,
+                                badgeCount: _unreadMessageCount,
+                                onTap: () => _onItemTapped(2),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        GestureDetector(
-                          onTap: () => _onItemTapped(0),
-                          child: _navIcon(Icons.home_outlined, 0),
-                        ),
-                        GestureDetector(
-                          onTap: () => _onItemTapped(1),
-                          child: _navIcon(Icons.calendar_month_outlined, 1),
-                        ),
-                        GestureDetector(
-                          onTap: () => _onItemTapped(2),
-                          child: _navIcon(Icons.medical_services_outlined, 2),
-                        ),
-                      ],
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
 
-  // Helper widget to draw the active grey circle indicator behind the icon
-  Widget _navIcon(IconData icon, int index) {
-    final isActive = _selectedIndex == index;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isActive ? Colors.grey.shade200 : Colors.transparent,
-        shape: BoxShape.circle,
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final int index;
+  final int selectedIndex;
+  final VoidCallback onTap;
+  final int badgeCount;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.index,
+    required this.selectedIndex,
+    required this.onTap,
+    this.badgeCount = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isActive = selectedIndex == index;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isActive ? const Color(0xFF4889A8).withOpacity(0.1) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  isActive ? activeIcon : icon,
+                  color: isActive ? const Color(0xFF4889A8) : Colors.grey.shade500,
+                  size: 26,
+                ),
+              ),
+              // Red badge
+              if (badgeCount > 0)
+                Positioned(
+                  right: 6,
+                  top: 4,
+                  child: AnimatedScale(
+                    scale: badgeCount > 0 ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.elasticOut,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF3B30),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.4),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          )
+                        ],
+                      ),
+                      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                      child: Center(
+                        child: Text(
+                          badgeCount > 99 ? '99+' : badgeCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: isActive ? 4 : 0,
+            height: 4,
+            decoration: const BoxDecoration(
+              color: Color(0xFF4889A8),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ],
       ),
-      child: Icon(icon, color: isActive ? const Color(0xFF3B4856) : Colors.grey.shade400),
     );
   }
 }
@@ -359,9 +492,8 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
           BlocBuilder<AppointmentBloc, AppointmentState>(
             builder: (context, state) {
               if (state is AppointmentsLoaded && state.appointments.isNotEmpty) {
-                // Find nearest upcoming appointment
                 final upcoming = state.appointments
-                    .where((a) => a.dateTime.isAfter(DateTime.now().subtract(const Duration(days: 1))) && ['scheduled', 'confirmed', 'pending'].contains(a.status))
+                    .where((a) => a.dateTime.isAfter(DateTime.now().subtract(const Duration(days: 1))) && ['scheduled', 'confirmed'].contains(a.status))
                     .toList();
                 
                 if (upcoming.isNotEmpty) {
@@ -388,6 +520,47 @@ class _HomeDashboardContentState extends State<_HomeDashboardContent> {
               return const SizedBox.shrink();
             },
           ),
+          // --- SECTION: MEDICAL SERVICES ---
+          const Text(
+            'Medical Services',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _QuickActionCard(
+                icon: Icons.history_edu_rounded,
+                label: 'E-Records',
+                color: Colors.orange.shade50,
+                iconColor: Colors.orange.shade600,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MedicalRecordsScreen())),
+              ),
+              const SizedBox(width: 12),
+              _QuickActionCard(
+                icon: Icons.medication,
+                label: 'Prescriptions',
+                color: Colors.teal.shade50,
+                iconColor: Colors.teal.shade600,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrescriptionsScreen())),
+              ),
+              const SizedBox(width: 12),
+              _QuickActionCard(
+                icon: Icons.calendar_today_rounded,
+                label: 'Schedules',
+                color: Colors.blue.shade50,
+                iconColor: Colors.blue.shade600,
+                onTap: () {
+                   setState(() {
+                      // Accessing parent state index
+                      final parent = context.findAncestorStateOfType<_PatientMainScreenState>();
+                      parent?._onItemTapped(1); 
+                   });
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+
           // --- SECTION: SPECIALTIES ---
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -850,12 +1023,24 @@ class _UpcomingAppointmentCard extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => BlocProvider.value(
-                              value: context.read<AppointmentBloc>(),
+                            builder: (_) => BlocProvider(
+                              create: (_) => di.sl<AppointmentBloc>(),
                               child: BookAppointmentScreen(doctor: doctor),
                             ),
                           ),
-                        );
+                        ).then((_) {
+                          final box = Hive.box(HiveBoxes.users);
+                          final userData = box.get('currentUser');
+                          final String? userId;
+                          if (userData is Map) {
+                            userId = userData['id'] as String?;
+                          } else {
+                            userId = box.get('userId');
+                          }
+                          if (userId != null) {
+                            context.read<AppointmentBloc>().add(LoadAppointmentsRequested(userId: userId));
+                          }
+                        });
                       } catch (_) {}
                     }
                   },
@@ -882,6 +1067,12 @@ class _UpcomingAppointmentCard extends StatelessWidget {
               Expanded(
                 child: GestureDetector(
                   onTap: () {
+                     if (appointment.status.toLowerCase() == 'pending') {
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         const SnackBar(content: Text('Waiting for doctor confirmation.')),
+                       );
+                       return;
+                     }
                      Navigator.push(
                        context,
                        MaterialPageRoute(
@@ -895,18 +1086,18 @@ class _UpcomingAppointmentCard extends StatelessWidget {
                   child: Container(
                     height: 50,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF246C92), // Solid dark blue
+                      color: appointment.status.toLowerCase() == 'pending' ? Colors.orange.shade400 : const Color(0xFF246C92), // Solid dark blue
                       borderRadius: BorderRadius.circular(25),
                     ),
                     alignment: Alignment.center,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.videocam, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
+                      children: [
+                        Icon(appointment.status.toLowerCase() == 'pending' ? Icons.hourglass_empty : Icons.videocam, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
                         Text(
-                          'Join Now',
-                          style: TextStyle(
+                          appointment.status.toLowerCase() == 'pending' ? 'Pending' : 'Join Now',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
@@ -920,6 +1111,66 @@ class _UpcomingAppointmentCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -9,7 +9,6 @@ import 'package:doctoroncall/features/auth/presentation/bloc/auth_bloc.dart';
 
 import 'package:doctoroncall/core/network/api_client.dart';
 
-import 'package:doctoroncall/features/call/call_service.dart';
 import 'package:doctoroncall/features/messages/data/datasources/chat_remote_data_source.dart';
 import 'package:doctoroncall/features/messages/data/datasources/chat_local_data_source.dart';
 import 'package:doctoroncall/features/messages/data/repositories/chat_repository_impl.dart';
@@ -59,14 +58,14 @@ Future<void> initDependencies() async {
       () => DoctorRemoteDataSourceImpl(apiClient: sl()));
   sl.registerLazySingleton<DoctorRepository>(
       () => DoctorRepositoryImpl(remoteDataSource: sl(), localDataSource: sl()));
-  sl.registerFactory(() => DoctorBloc(doctorRepository: sl()));
+  sl.registerFactory(() => DoctorBloc(doctorRepository: sl(), chatRepository: sl()));
 
   // Appointments
   sl.registerLazySingleton<AppointmentRemoteDataSource>(
       () => AppointmentRemoteDataSourceImpl(apiClient: sl()));
   sl.registerLazySingleton<AppointmentRepository>(
       () => AppointmentRepositoryImpl(remoteDataSource: sl(), localDataSource: sl()));
-  sl.registerFactory(() => AppointmentBloc(repository: sl()));
+  sl.registerFactory(() => AppointmentBloc(repository: sl(), chatRepository: sl()));
 
   // Notifications
   sl.registerLazySingleton<NotificationRemoteDataSource>(
@@ -81,7 +80,4 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<ChatRepository>(
       () => ChatRepositoryImpl(remoteDataSource: sl(), localDataSource: sl()));
   sl.registerFactory(() => ChatBloc(chatRepository: sl()));
-
-  // Call
-  sl.registerFactory(() => CallService(dataSource: sl<ChatRemoteDataSource>()));
 }

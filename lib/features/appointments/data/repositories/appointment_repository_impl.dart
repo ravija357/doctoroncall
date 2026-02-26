@@ -76,6 +76,11 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
   }
 
   @override
+  Future<void> updateAppointmentStatus(String appointmentId, String status) async {
+    await remoteDataSource.updateAppointmentStatus(appointmentId, status);
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> getAvailability(String doctorId, String date) async {
     return remoteDataSource.getAvailability(doctorId, date);
   }

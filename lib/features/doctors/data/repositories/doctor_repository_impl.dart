@@ -1,6 +1,8 @@
 import 'package:doctoroncall/features/doctors/data/datasources/doctor_remote_data_source.dart';
 import 'package:doctoroncall/features/doctors/data/datasources/doctor_local_data_source.dart';
+import 'package:doctoroncall/features/doctors/data/models/schedule_model.dart';
 import 'package:doctoroncall/features/doctors/domain/entities/doctor.dart';
+import 'package:doctoroncall/features/doctors/domain/entities/schedule.dart';
 import 'package:doctoroncall/features/doctors/domain/repositories/doctor_repository.dart';
 
 class DoctorRepositoryImpl implements DoctorRepository {
@@ -25,5 +27,11 @@ class DoctorRepositoryImpl implements DoctorRepository {
       if (cached.isNotEmpty) return cached;
       rethrow;
     }
+  }
+
+  @override
+  Future<void> updateSchedule(List<Schedule> schedules) async {
+    final scheduleModels = schedules.map((e) => ScheduleModel.fromEntity(e)).toList();
+    await remoteDataSource.updateSchedule(scheduleModels);
   }
 }

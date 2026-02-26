@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import '../../domain/entities/doctor.dart';
+import 'schedule_model.dart';
 
 @HiveType(typeId: 2)
 class DoctorModel extends Doctor {
@@ -52,6 +53,7 @@ class DoctorModel extends Doctor {
     String? hospital,
     required double averageRating,
     required int totalReviews,
+    List<ScheduleModel>? schedules,
   })  : hiveId = id,
         hiveUserId = userId,
         hiveFirstName = firstName,
@@ -77,6 +79,7 @@ class DoctorModel extends Doctor {
           hospital: hospital,
           averageRating: averageRating,
           totalReviews: totalReviews,
+          schedules: schedules,
         );
 
   factory DoctorModel.fromJson(Map<String, dynamic> json) {
@@ -94,6 +97,11 @@ class DoctorModel extends Doctor {
       hospital: json['hospital'],
       averageRating: (json['averageRating'] ?? 0).toDouble(),
       totalReviews: json['totalReviews'] ?? 0,
+      schedules: json['schedules'] != null
+          ? (json['schedules'] as List)
+              .map((s) => ScheduleModel.fromJson(s))
+              .toList()
+          : null,
     );
   }
 

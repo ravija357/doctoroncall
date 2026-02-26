@@ -8,7 +8,14 @@ abstract class ChatEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class LoadContactsRequested extends ChatEvent {}
+class LoadContactsRequested extends ChatEvent {
+  final bool isBackground;
+
+  const LoadContactsRequested({this.isBackground = false});
+
+  @override
+  List<Object> get props => [isBackground];
+}
 
 class LoadMessagesRequested extends ChatEvent {
   final String userId;
@@ -96,3 +103,14 @@ class SendFileRequested extends ChatEvent {
   @override
   List<Object> get props => [filePath, receiverId, type];
 }
+
+class MarkAsReadRequested extends ChatEvent {
+  final String userId;
+
+  const MarkAsReadRequested({required this.userId});
+
+  @override
+  List<Object> get props => [userId];
+}
+
+class ResetActiveChatUserId extends ChatEvent {}

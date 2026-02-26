@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:doctoroncall/features/call/call_screen.dart';
+import 'package:doctoroncall/features/call/jitsi_call_screen.dart';
+import 'package:doctoroncall/core/di/injection_container.dart';
+import 'package:doctoroncall/features/messages/domain/repositories/chat_repository.dart';
 
 /// Show an incoming call dialog. Returns true if accepted, false if declined.
 Future<bool?> showIncomingCallDialog(
@@ -9,6 +11,7 @@ Future<bool?> showIncomingCallDialog(
   required String localUserId,
   required Map<String, dynamic> offer,
   required bool isVideo,
+  String? roomName,
 }) {
   return showDialog<bool>(
     context: context,
@@ -19,6 +22,7 @@ Future<bool?> showIncomingCallDialog(
       localUserId: localUserId,
       offer: offer,
       isVideo: isVideo,
+      roomName: roomName,
     ),
   );
 }
@@ -29,6 +33,7 @@ class _IncomingCallDialog extends StatelessWidget {
   final String localUserId;
   final Map<String, dynamic> offer;
   final bool isVideo;
+  final String? roomName;
 
   const _IncomingCallDialog({
     required this.callerName,
@@ -36,6 +41,7 @@ class _IncomingCallDialog extends StatelessWidget {
     required this.localUserId,
     required this.offer,
     required this.isVideo,
+    this.roomName,
   });
 
   @override
@@ -104,7 +110,13 @@ class _IncomingCallDialog extends StatelessWidget {
               children: [
                 // Decline
                 GestureDetector(
-                  onTap: () => Navigator.of(context).pop(false),
+                  onTap: () {
+                    Navigator.of(context).pop(false);
+                    try {
+                      final chatRepo = sl<ChatRepository>();
+                      chatRepo.emitEndCall(callerId);
+                    } catch (_) {}
+                  },
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -126,18 +138,23 @@ class _IncomingCallDialog extends StatelessWidget {
                 GestureDetector(
                   onTap: () {
                     Navigator.of(context).pop(true);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => CallScreen(
-                          remoteUserId: callerId,
-                          remoteUserName: callerName,
-                          isVideo: isVideo,
-                          isCaller: false,
-                          localUserId: localUserId,
-                          incomingOffer: offer,
+                    
+                    if (roomName != null) {
+                      try {
+                        final chatRepo = sl<ChatRepository>();
+                        chatRepo.emitAnswerCall(to: callerId, signal: {'type': 'jitsi_accept'});
+                      } catch (_) {}
+
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => JitsiCallScreen(
+                            roomName: roomName!,
+                            isVideo: isVideo,
+                            remoteUserId: callerId,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    }
                   },
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

@@ -24,11 +24,12 @@ class ContactsLoaded extends ChatState {
 
 class MessagesLoaded extends ChatState {
   final List<Message> messages;
+  final String? activeChatUserId;
 
-  const MessagesLoaded({required this.messages});
+  const MessagesLoaded({required this.messages, this.activeChatUserId});
 
   @override
-  List<Object?> get props => [messages];
+  List<Object?> get props => [messages, activeChatUserId];
 }
 
 class ChatError extends ChatState {

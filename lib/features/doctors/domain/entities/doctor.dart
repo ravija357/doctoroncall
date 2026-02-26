@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'schedule.dart';
 
 class Doctor extends Equatable {
   final String id;
@@ -13,6 +14,7 @@ class Doctor extends Equatable {
   final String? hospital;
   final double averageRating;
   final int totalReviews;
+  final List<Schedule>? schedules;
 
   const Doctor({
     required this.id,
@@ -27,6 +29,7 @@ class Doctor extends Equatable {
     this.hospital,
     required this.averageRating,
     required this.totalReviews,
+    this.schedules,
   });
 
   @override
@@ -43,5 +46,6 @@ class Doctor extends Equatable {
         hospital,
         averageRating,
         totalReviews,
+        schedules,
       ];
 }

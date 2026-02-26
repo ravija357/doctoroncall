@@ -1,3 +1,4 @@
+import 'package:doctoroncall/features/doctors/domain/entities/schedule.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class DoctorEvent extends Equatable {
@@ -7,4 +8,15 @@ abstract class DoctorEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class LoadDoctorsRequested extends DoctorEvent {}
+class LoadDoctorsRequested extends DoctorEvent {
+  const LoadDoctorsRequested();
+}
+
+class UpdateDoctorScheduleRequested extends DoctorEvent {
+  final List<Schedule> schedules;
+
+  const UpdateDoctorScheduleRequested({required this.schedules});
+
+  @override
+  List<Object> get props => [schedules];
+}

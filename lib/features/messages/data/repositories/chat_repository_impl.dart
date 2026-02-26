@@ -68,4 +68,53 @@ class ChatRepositoryImpl implements ChatRepository {
   Future<Message> uploadFile({required String filePath, required String receiverId, required String type}) {
     return remoteDataSource.uploadFile(filePath: filePath, receiverId: receiverId, type: type);
   }
+
+  // ---- Call Signaling ----
+
+  @override
+  void emitCallUser({
+    required String userToCall,
+    required dynamic signalData,
+    required String from,
+    required String name,
+    required String callType,
+  }) {
+    remoteDataSource.emitCallUser(
+      userToCall: userToCall,
+      signalData: signalData,
+      from: from,
+      name: name,
+      callType: callType,
+    );
+  }
+
+  @override
+  void emitAnswerCall({required String to, required dynamic signal}) {
+    remoteDataSource.emitAnswerCall(to: to, signal: signal);
+  }
+
+  @override
+  void emitIceCandidate({required String to, required dynamic candidate}) {
+    remoteDataSource.emitIceCandidate(to: to, candidate: candidate);
+  }
+
+  @override
+  void emitEndCall(String to) {
+    remoteDataSource.emitEndCall(to);
+  }
+
+  @override
+  Stream<dynamic> appointmentSyncStream() => remoteDataSource.appointmentSyncStream;
+
+  @override
+  Stream<dynamic> doctorSyncStream() => remoteDataSource.doctorSyncStream;
+
+  @override
+  Stream<dynamic> scheduleSyncStream() => remoteDataSource.scheduleSyncStream;
+
+  @override
+  Stream<dynamic> notificationSyncStream() => remoteDataSource.notificationSyncStream;
+
+  @override
+  Future<void> markAsRead(String senderId) => remoteDataSource.markAsRead(senderId);
 }

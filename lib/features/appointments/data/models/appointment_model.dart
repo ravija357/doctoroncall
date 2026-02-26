@@ -42,6 +42,12 @@ class AppointmentModel extends Appointment {
   @HiveField(12)
   final String? hiveDoctorImage;
 
+  @HiveField(13)
+  final String? hivePatientName;
+
+  @HiveField(14)
+  final String? hivePrescriptionUrl;
+
   AppointmentModel({
     String? id,
     required String doctorId,
@@ -56,6 +62,8 @@ class AppointmentModel extends Appointment {
     String? specialization,
     String? hospital,
     String? doctorImage,
+    String? patientName,
+    String? prescriptionUrl,
   })  : hiveId = id,
         hiveDoctorId = doctorId,
         hivePatientId = patientId,
@@ -69,6 +77,8 @@ class AppointmentModel extends Appointment {
         hiveSpecialization = specialization,
         hiveHospital = hospital,
         hiveDoctorImage = doctorImage,
+        hivePatientName = patientName,
+        hivePrescriptionUrl = prescriptionUrl,
         super(
           id: id,
           doctorId: doctorId,
@@ -83,6 +93,8 @@ class AppointmentModel extends Appointment {
           specialization: specialization,
           hospital: hospital,
           doctorImage: doctorImage,
+          patientName: patientName,
+          prescriptionUrl: prescriptionUrl,
         );
 
   /// Parse from backend JSON (populated doctor)
@@ -113,8 +125,14 @@ class AppointmentModel extends Appointment {
     // Patient may be populated or just an ID string
     final patient = json['patient'];
     String patientId = '';
+    String? patientName;
     if (patient is Map<String, dynamic>) {
       patientId = patient['_id'] ?? '';
+      final firstName = patient['firstName'] ?? '';
+      final lastName = patient['lastName'] ?? '';
+      if (firstName.isNotEmpty || lastName.isNotEmpty) {
+        patientName = '$firstName $lastName'.trim();
+      }
     } else if (patient is String) {
       patientId = patient;
     }
@@ -133,6 +151,8 @@ class AppointmentModel extends Appointment {
       specialization: specialization,
       hospital: hospital,
       doctorImage: doctorImage,
+      patientName: patientName,
+      prescriptionUrl: json['prescriptionUrl'],
     );
   }
 
@@ -140,7 +160,7 @@ class AppointmentModel extends Appointment {
   Map<String, dynamic> toJson() {
     return {
       'doctorId': doctorId,
-      'date': dateTime.toIso8601String(),
+      'date': "${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}",
       'startTime': startTime,
       'endTime': endTime,
       'reason': reason,
@@ -162,6 +182,8 @@ class AppointmentModel extends Appointment {
       'specialization': specialization,
       'hospital': hospital,
       'doctorImage': doctorImage,
+      'patientName': patientName,
+      'prescriptionUrl': prescriptionUrl,
     };
   }
 
@@ -180,6 +202,8 @@ class AppointmentModel extends Appointment {
       specialization: map['specialization'] as String?,
       hospital: map['hospital'] as String?,
       doctorImage: map['doctorImage'] as String?,
+      patientName: map['patientName'] as String?,
+      prescriptionUrl: map['prescriptionUrl'] as String?,
     );
   }
 }

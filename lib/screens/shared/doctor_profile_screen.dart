@@ -9,6 +9,9 @@ import 'package:doctoroncall/core/di/injection_container.dart';
 import 'package:doctoroncall/core/utils/image_utils.dart';
 import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_bloc.dart';
 import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_event.dart';
+import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_event.dart';
+import 'package:doctoroncall/core/constants/hive_boxes.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   final Doctor doctor;
@@ -438,16 +441,27 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                           flex: 2,
                           child: GestureDetector(
                             onTap: () {
-                              final appointmentBloc = context.read<AppointmentBloc>();
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => BlocProvider.value(
-                                    value: appointmentBloc,
+                                  builder: (_) => BlocProvider(
+                                    create: (_) => sl<AppointmentBloc>(),
                                     child: BookAppointmentScreen(doctor: doctor),
                                   ),
                                 ),
-                              );
+                              ).then((_) {
+                                final box = Hive.box(HiveBoxes.users);
+                                final userData = box.get('currentUser');
+                                final String? userId;
+                                if (userData is Map) {
+                                  userId = userData['id'] as String?;
+                                } else {
+                                  userId = box.get('userId');
+                                }
+                                if (userId != null) {
+                                  context.read<AppointmentBloc>().add(LoadAppointmentsRequested(userId: userId));
+                                }
+                              });
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),

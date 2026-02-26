@@ -6,10 +6,8 @@ import 'dart:io';
 
 class ApiConstants {
   static String get baseUrl {
-    if (Platform.isAndroid) {
-      return "http://10.0.2.2:3001";
-    } else {
-      return "http://localhost:3001";
-    }
+    // Both physical devices and simulators on the same WiFi
+    // can access this local IP address.
+    return "http://192.168.1.71:3001";
   }
 }

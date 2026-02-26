@@ -9,9 +9,11 @@ import 'package:doctoroncall/features/messages/presentation/bloc/chat_event.dart
 import 'package:doctoroncall/features/messages/presentation/bloc/chat_state.dart';
 import 'package:doctoroncall/features/messages/domain/entities/message.dart';
 import 'package:doctoroncall/features/messages/domain/repositories/chat_repository.dart';
-import 'package:doctoroncall/features/call/call_screen.dart';
 import 'package:doctoroncall/core/network/api_client.dart';
 import 'package:doctoroncall/core/constants/api_constants.dart';
+import 'package:doctoroncall/features/call/jitsi_call_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:doctoroncall/core/constants/hive_boxes.dart';
 
 class ChatScreen extends StatefulWidget {
   final String otherUserId;
@@ -37,6 +39,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     context.read<ChatBloc>().add(ConnectSocketRequested());
     context.read<ChatBloc>().add(LoadMessagesRequested(userId: widget.otherUserId));
+    context.read<ChatBloc>().add(MarkAsReadRequested(userId: widget.otherUserId));
 
     _statusTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final connected = sl<ChatRepository>().isSocketConnected;
@@ -48,6 +51,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _statusTimer.cancel();
     _messageController.dispose();
+    // Reset active chat ID so SnackBar notifications for this user can resume
+    context.read<ChatBloc>().add(ResetActiveChatUserId());
     super.dispose();
   }
 
@@ -130,76 +135,87 @@ class _ChatScreenState extends State<ChatScreen> {
         foregroundColor: Colors.black,
         elevation: 1,
       ),
-      body: Column(
-        children: [
-          // File uploading indicator
-          BlocBuilder<ChatBloc, ChatState>(
-            buildWhen: (p, c) => c is FileUploading || p is FileUploading,
-            builder: (_, state) {
-              if (state is FileUploading) {
-                return Container(
-                  color: const Color(0xFF6AA9D8).withValues(alpha: 0.1),
-                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-                  child: const Row(
-                    children: [
-                      SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6AA9D8))),
-                      SizedBox(width: 10),
-                      Text('Uploading…', style: TextStyle(color: Color(0xFF6AA9D8), fontSize: 13)),
-                    ],
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-          // Message list
-          Expanded(
-            child: BlocBuilder<ChatBloc, ChatState>(
-              builder: (context, state) {
-                if (state is ChatLoading) {
-                  return const Center(child: CircularProgressIndicator(color: Color(0xFF6AA9D8)));
-                } else if (state is ChatError) {
-                  return Center(child: Text(state.message));
-                } else if (state is MessagesLoaded) {
-                  final messages = state.messages.reversed.toList();
-                  if (messages.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'Start the conversation!',
-                        style: TextStyle(fontFamily: 'PlayfairDisplay', color: Colors.grey),
-                      ),
-                    );
-                  }
-                  return ListView.builder(
-                    reverse: true,
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final message = messages[index];
-                      final isMe = message.senderId != widget.otherUserId;
-                      return _MessageBubble(
-                        message: message,
-                        isMe: isMe,
-                        otherUserId: widget.otherUserId,
-                        onDelete: (forEveryone) {
-                          if (message.id != null) {
-                            context.read<ChatBloc>().add(DeleteMessageRequested(
-                              messageId: message.id!,
-                              receiverId: widget.otherUserId,
-                              forEveryone: forEveryone,
-                            ));
-                          }
-                        },
-                      );
-                    },
+      body: BlocListener<ChatBloc, ChatState>(
+        listenWhen: (p, c) => c is MessagesLoaded,
+        listener: (context, state) {
+          if (state is MessagesLoaded) {
+            // Check if the last message in the loaded list is from the other user
+            if (state.messages.isNotEmpty && state.messages.last.senderId == widget.otherUserId) {
+              context.read<ChatBloc>().add(MarkAsReadRequested(userId: widget.otherUserId));
+            }
+          }
+        },
+        child: Column(
+          children: [
+            // File uploading indicator
+            BlocBuilder<ChatBloc, ChatState>(
+              buildWhen: (p, c) => c is FileUploading || p is FileUploading,
+              builder: (_, state) {
+                if (state is FileUploading) {
+                  return Container(
+                    color: const Color(0xFF6AA9D8).withValues(alpha: 0.1),
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                    child: const Row(
+                      children: [
+                        SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6AA9D8))),
+                        SizedBox(width: 10),
+                        Text('Uploading…', style: TextStyle(color: Color(0xFF6AA9D8), fontSize: 13)),
+                      ],
+                    ),
                   );
                 }
                 return const SizedBox.shrink();
               },
             ),
-          ),
-          // Input bar
-          _buildInputBar(context),
-        ],
+            // Message list
+            Expanded(
+              child: BlocBuilder<ChatBloc, ChatState>(
+                builder: (context, state) {
+                  if (state is ChatLoading) {
+                    return const Center(child: CircularProgressIndicator(color: Color(0xFF6AA9D8)));
+                  } else if (state is ChatError) {
+                    return Center(child: Text(state.message));
+                  } else if (state is MessagesLoaded) {
+                    final messages = state.messages.reversed.toList();
+                    if (messages.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'Start the conversation!',
+                          style: TextStyle(fontFamily: 'PlayfairDisplay', color: Colors.grey),
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      reverse: true,
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final message = messages[index];
+                        final isMe = message.senderId != widget.otherUserId;
+                        return _MessageBubble(
+                          message: message,
+                          isMe: isMe,
+                          otherUserId: widget.otherUserId,
+                          onDelete: (forEveryone) {
+                            if (message.id != null) {
+                              context.read<ChatBloc>().add(DeleteMessageRequested(
+                                messageId: message.id!,
+                                receiverId: widget.otherUserId,
+                                forEveryone: forEveryone,
+                              ));
+                            }
+                          },
+                        );
+                      },
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+            // Input bar
+            _buildInputBar(context),
+          ],
+        ),
       ),
     );
   }
@@ -341,14 +357,40 @@ class _ChatScreenState extends State<ChatScreen> {
     final apiClient = sl<ApiClient>();
     final localUserId = await apiClient.secureStorage.read(key: 'user_id') ?? '';
     if (!mounted) return;
+
+    final roomName = 'doc-call-$localUserId-${DateTime.now().millisecondsSinceEpoch}';
+    final chatRepo = sl<ChatRepository>();
+    
+    // Get sender name for call 
+    final box = Hive.box(HiveBoxes.users);
+    final userData = box.get('currentUser');
+    String senderName = 'User';
+    if (userData is Map) {
+      senderName = '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim();
+    } else {
+      senderName = '${box.get('firstName', defaultValue: '')} ${box.get('lastName', defaultValue: '')}'.trim();
+    }
+    if (senderName.isEmpty) senderName = 'User';
+
+    // Instead of raw WebRTC, emit jitsi_invite
+    try {
+      chatRepo.emitCallUser(
+        userToCall: widget.otherUserId,
+        signalData: {'type': 'jitsi_invite', 'roomName': roomName},
+        from: localUserId,
+        name: senderName,
+        callType: isVideo ? 'video' : 'audio',
+      );
+    } catch (_) {}
+
+    if (!mounted) return;
+
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => CallScreen(
-          remoteUserId: widget.otherUserId,
-          remoteUserName: widget.otherUserName,
+        builder: (_) => JitsiCallScreen(
+          roomName: roomName,
           isVideo: isVideo,
-          isCaller: true,
-          localUserId: localUserId,
+          remoteUserId: widget.otherUserId,
         ),
       ),
     );

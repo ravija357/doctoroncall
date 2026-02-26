@@ -8,6 +8,7 @@ abstract class AppointmentRemoteDataSource {
   Future<List<AppointmentModel>> getDoctorAppointments();
   Future<void> bookAppointment(AppointmentModel appointment);
   Future<void> cancelAppointment(String appointmentId);
+  Future<void> updateAppointmentStatus(String appointmentId, String status);
   Future<List<Map<String, dynamic>>> getAvailability(String doctorId, String date);
 }
 
@@ -85,6 +86,27 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
       
       if (response.statusCode != 200) {
         throw ServerException(message: 'Failed to cancel appointment');
+      }
+    } on DioException catch (e) {
+      throw ServerException(
+        message: e.response?.data['message'] ?? e.message ?? 'Failed to connect to server',
+      );
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      throw ServerException(message: e.toString());
+    }
+  }
+
+  @override
+  Future<void> updateAppointmentStatus(String appointmentId, String status) async {
+    try {
+      final response = await apiClient.dio.patch(
+        '/appointments/$appointmentId/status',
+        data: {'status': status},
+      );
+      
+      if (response.statusCode != 200) {
+        throw ServerException(message: 'Failed to update appointment status');
       }
     } on DioException catch (e) {
       throw ServerException(

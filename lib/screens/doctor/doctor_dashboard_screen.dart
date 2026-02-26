@@ -10,6 +10,8 @@ import 'package:doctoroncall/features/appointments/presentation/bloc/appointment
 import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
 import 'package:doctoroncall/screens/shared/notification_screen.dart';
 import 'package:doctoroncall/screens/shared/profile_screen.dart';
+import 'package:doctoroncall/screens/doctor/availability_screen.dart';
+import 'package:doctoroncall/screens/doctor/my_patients_screen.dart';
 import 'package:intl/intl.dart';
 
 class DoctorDashboardScreen extends StatefulWidget {
@@ -148,12 +150,18 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
           BlocBuilder<AppointmentBloc, AppointmentState>(
             builder: (context, state) {
               final appointments = state is DoctorAppointmentsLoaded ? state.appointments : <dynamic>[];
+              
+              // Only confirmed/completed/scheduled for today
               final today = appointments.where((a) {
                 final d = DateTime.tryParse(a.dateTime.toString()) ?? a.dateTime;
-                return d.year == DateTime.now().year &&
+                final isToday = d.year == DateTime.now().year &&
                     d.month == DateTime.now().month &&
                     d.day == DateTime.now().day;
+                return isToday && a.status.toLowerCase() != 'pending';
               }).toList();
+
+              // All pending appointments regardless of date
+              final pending = appointments.where((a) => a.status.toLowerCase() == 'pending').toList();
 
               return Column(
                 children: [
@@ -167,14 +175,145 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                       ),
                       const SizedBox(width: 16),
                       _StatCard(
-                        title: 'Today\'s Patients',
-                        value: state is AppointmentLoading ? '…' : '${today.length}',
-                        icon: Icons.person,
-                        color: Colors.green,
+                        title: 'Pending Requests',
+                        value: state is AppointmentLoading ? '…' : '${pending.length}',
+                        icon: Icons.hourglass_empty,
+                        color: Colors.orange,
                       ),
                     ],
                   ),
                   const SizedBox(height: 32),
+
+                  // --- SECTION: MANAGEMENT SERVICES ---
+                  const Text(
+                    'Management Services',
+                    style: TextStyle(
+                      fontFamily: 'PlayfairDisplay',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _QuickActionCard(
+                        icon: Icons.calendar_month_rounded,
+                        label: 'Schedules',
+                        color: Colors.blue.shade50,
+                        iconColor: Colors.blue.shade600,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AvailabilityScreen())),
+                      ),
+                      const SizedBox(width: 12),
+                      _QuickActionCard(
+                        icon: Icons.people_rounded,
+                        label: 'My Patients',
+                        color: Colors.teal.shade50,
+                        iconColor: Colors.teal.shade600,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPatientsScreen())),
+                      ),
+                      const SizedBox(width: 12),
+                      _QuickActionCard(
+                        icon: Icons.analytics_rounded,
+                        label: 'Analytics',
+                        color: Colors.orange.shade50,
+                        iconColor: Colors.orange.shade600,
+                        onTap: () {}, // Planned feature
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  // Pending Requests Section
+                  if (pending.isNotEmpty) ...[
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Pending Requests',
+                        style: TextStyle(
+                          fontFamily: 'PlayfairDisplay',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: pending.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) {
+                        final ap = pending[i];
+                        final formattedDate = DateFormat('MMM d, yyyy').format(ap.dateTime);
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.orange.shade200),
+                            boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.05), blurRadius: 10)],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade50,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.person_outline, color: Colors.orange),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      ap.patientName ?? 'Patient Request',
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    Text(
+                                      '$formattedDate at ${DateFormat('h:mm a').format(ap.dateTime)}',
+                                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.check_circle, color: Colors.green),
+                                    onPressed: () {
+                                      context.read<AppointmentBloc>().add(
+                                        UpdateAppointmentStatusRequested(
+                                          appointmentId: ap.id!,
+                                          status: 'confirmed',
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.cancel, color: Colors.red),
+                                    onPressed: () {
+                                      context.read<AppointmentBloc>().add(
+                                        UpdateAppointmentStatusRequested(
+                                          appointmentId: ap.id!,
+                                          status: 'cancelled',
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              )
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+
+                  // Today's Schedule Section
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -234,7 +373,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Patient Appointment',
+                                      ap.patientName ?? 'Patient Appointment',
                                       style: const TextStyle(fontWeight: FontWeight.bold),
                                     ),
                                     Text(
@@ -315,6 +454,67 @@ class _StatCard extends StatelessWidget {
             Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
             Text(title, style: const TextStyle(fontFamily: 'PlayfairDisplay', fontSize: 14, color: Colors.black54)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 28),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

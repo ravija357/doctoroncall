@@ -38,9 +38,17 @@ class _AppointmentListScreenState extends State<AppointmentListScreen>
   }
 
   void _loadAppointments() {
-    final userId = _getUserId();
-    if (userId != null) {
-      context.read<AppointmentBloc>().add(LoadAppointmentsRequested(userId: userId));
+    final box = Hive.box(HiveBoxes.users);
+    final userData = box.get('currentUser');
+    final String? role = userData is Map ? userData['role'] : box.get('role');
+
+    if (role == 'doctor') {
+      context.read<AppointmentBloc>().add(const LoadDoctorAppointmentsRequested());
+    } else {
+      final userId = _getUserId();
+      if (userId != null) {
+        context.read<AppointmentBloc>().add(LoadAppointmentsRequested(userId: userId));
+      }
     }
   }
 
@@ -118,6 +126,8 @@ class _AppointmentListScreenState extends State<AppointmentListScreen>
                   } else if (state is AppointmentError) {
                     return _buildErrorState(state.message);
                   } else if (state is AppointmentsLoaded) {
+                    return _buildAppointmentList(state.appointments);
+                  } else if (state is DoctorAppointmentsLoaded) {
                     return _buildAppointmentList(state.appointments);
                   }
                   return const SizedBox.shrink();
@@ -386,9 +396,7 @@ class _AppointmentListScreenState extends State<AppointmentListScreen>
       case 'completed':
         return _statusChip('Done', const Color(0xFF6AA9D8), Icons.check_circle_outline);
       case 'confirmed':
-      case 'pending':
-      default:
-        return GestureDetector(
+        final cancelBtn = GestureDetector(
           onTap: () {
             if (appointmentId != null && userId != null) {
               _showCancelDialog(appointmentId, userId);
@@ -413,6 +421,41 @@ class _AppointmentListScreenState extends State<AppointmentListScreen>
             ),
           ),
         );
+        return cancelBtn;
+      case 'pending':
+        return Column(
+          children: [
+            _statusChip('Pending', Colors.orange, Icons.hourglass_empty),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () {
+                if (appointmentId != null && userId != null) {
+                  _showCancelDialog(appointmentId, userId);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [Color(0xFFE53935), Color(0xFFD32F2F)]),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFFE53935).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3)),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.close, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text('Cancel', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      default:
+        return _statusChip('Unknown', Colors.grey, Icons.help_outline);
     }
   }
 
