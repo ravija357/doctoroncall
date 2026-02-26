@@ -59,6 +59,13 @@ class _AppointmentListScreenState extends State<AppointmentListScreen>
     return box.get('userId');
   }
 
+  bool _isDoctor() {
+    final box = Hive.box(HiveBoxes.users);
+    final userData = box.get('currentUser');
+    final String? role = userData is Map ? userData['role'] : box.get('role');
+    return role == 'doctor';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -285,7 +292,14 @@ class _AppointmentListScreenState extends State<AppointmentListScreen>
   Widget _buildAppointmentCard(Appointment apt, int index) {
     final dateStr = DateFormat('d MMM yyyy').format(apt.dateTime);
     final timeStr = _formatTime(apt.startTime);
-    final doctorName = apt.doctorName ?? 'Doctor';
+    
+    final isDoctor = _isDoctor();
+    final personName = isDoctor 
+        ? (apt.patientName ?? 'Patient') 
+        : (apt.doctorName ?? 'Doctor');
+    final personLabel = isDoctor ? 'Patient' : 'Doctor';
+    final personIcon = isDoctor ? Icons.person_rounded : Icons.medical_services_outlined;
+
     final type = apt.specialization ?? apt.reason ?? 'Consultation';
     final place = apt.hospital ?? 'Online';
     final status = apt.status;
@@ -320,7 +334,7 @@ class _AppointmentListScreenState extends State<AppointmentListScreen>
                 // Date icon + text
                 Expanded(child: _infoColumn(Icons.calendar_today, 'Date', dateStr)),
                 Expanded(child: _infoColumn(Icons.access_time_rounded, 'Time', timeStr)),
-                Expanded(child: _infoColumn(Icons.person_outline, 'Doctor', doctorName)),
+                Expanded(child: _infoColumn(personIcon, personLabel, personName)),
               ],
             ),
             Padding(

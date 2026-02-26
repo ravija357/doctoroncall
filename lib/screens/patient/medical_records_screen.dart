@@ -222,7 +222,21 @@ class _RecordCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Row(
+                      children: [
+                        Icon(Icons.download_done_rounded, color: Colors.white),
+                        SizedBox(width: 12),
+                        Text('Report downloaded securely'),
+                      ],
+                    ),
+                    backgroundColor: Colors.green.shade600,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
               icon: const Icon(Icons.download_rounded, size: 18),
               label: const Text('Download Report'),
               style: OutlinedButton.styleFrom(

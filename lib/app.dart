@@ -18,8 +18,10 @@ import 'package:doctoroncall/features/messages/presentation/bloc/chat_state.dart
 import 'package:doctoroncall/features/messages/presentation/bloc/chat_event.dart';
 import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_bloc.dart';
 import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_bloc.dart';
+import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_event.dart';
 import 'package:doctoroncall/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:doctoroncall/features/notifications/presentation/bloc/notification_event.dart';
+import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_event.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -55,6 +57,10 @@ class _IncomingCallWrapper extends StatefulWidget {
 class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
   StreamSubscription? _incomingCallSub;
   StreamSubscription? _messageSub;
+  StreamSubscription? _appointmentSyncSub;
+  StreamSubscription? _notificationSyncSub;
+  StreamSubscription? _doctorSyncSub;
+  StreamSubscription? _scheduleSyncSub;
 
   @override
   void initState() {
@@ -63,6 +69,7 @@ class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _listenForIncomingCalls();
       _listenForMessages();
+      _listenForSyncEvents();
     });
   }
 
@@ -125,6 +132,44 @@ class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
     });
   }
 
+  void _listenForSyncEvents() {
+    final dataSource = sl<ChatRemoteDataSource>();
+
+    _appointmentSyncSub = dataSource.appointmentSyncStream.listen((_) {
+      if (!mounted) return;
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthAuthenticated) {
+        if (authState.user.role.toUpperCase() == 'DOCTOR') {
+          context.read<AppointmentBloc>().add(LoadDoctorAppointmentsRequested());
+        } else {
+          context.read<AppointmentBloc>().add(LoadAppointmentsRequested(userId: authState.user.id ?? ''));
+        }
+      }
+    });
+
+    _notificationSyncSub = dataSource.notificationSyncStream.listen((_) {
+      if (!mounted) return;
+      context.read<NotificationBloc>().add(LoadNotificationsRequested());
+    });
+
+    _doctorSyncSub = dataSource.doctorSyncStream.listen((_) {
+      if (!mounted) return;
+      context.read<DoctorBloc>().add(LoadDoctorsRequested());
+    });
+
+    _scheduleSyncSub = dataSource.scheduleSyncStream.listen((_) {
+      if (!mounted) return;
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthAuthenticated) {
+        if (authState.user.role.toUpperCase() == 'DOCTOR') {
+          context.read<AppointmentBloc>().add(LoadDoctorAppointmentsRequested());
+        } else {
+          context.read<DoctorBloc>().add(LoadDoctorsRequested());
+        }
+      }
+    });
+  }
+
   OverlayEntry? _toastEntry;
 
   void _showPremiumMessageToast(String content) {
@@ -160,6 +205,10 @@ class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
   void dispose() {
     _incomingCallSub?.cancel();
     _messageSub?.cancel();
+    _appointmentSyncSub?.cancel();
+    _notificationSyncSub?.cancel();
+    _doctorSyncSub?.cancel();
+    _scheduleSyncSub?.cancel();
     super.dispose();
   }
 
@@ -180,7 +229,7 @@ class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is AuthAuthenticated) {
-            return state.user.role == 'DOCTOR'
+            return state.user.role.toUpperCase() == 'DOCTOR'
                 ? const DoctorMainScreen()
                 : const PatientMainScreen();
           }

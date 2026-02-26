@@ -208,6 +208,16 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       _doctorSyncController.add(data);
     });
 
+    _socket?.on('doctor_profile_updated', (data) {
+      print('[SOCKET] Global Doctor Profile Updated Received: $data');
+      _doctorSyncController.add(data);
+    });
+
+    _socket?.on('doctor_rating_updated', (data) {
+      print('[SOCKET] Global Doctor Rating Updated Received: $data');
+      _doctorSyncController.add(data);
+    });
+
     _socket?.on('schedule_sync', (data) {
       print('[SOCKET] Schedule Sync Received: $data');
       _scheduleSyncController.add(data);

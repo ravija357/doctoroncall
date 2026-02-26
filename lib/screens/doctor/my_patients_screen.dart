@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_bloc.dart';
 import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
 import 'package:doctoroncall/features/appointments/domain/entities/appointment.dart';
+import 'package:doctoroncall/screens/doctor/patient_detail_screen.dart';
 import 'package:intl/intl.dart';
 
 class MyPatientsScreen extends StatelessWidget {
@@ -119,14 +120,18 @@ class MyPatientsScreen extends StatelessWidget {
   }
 
   void _showPatientHistory(BuildContext context, _PatientSummary patient, List<Appointment> allAppointments) {
-    final history = allAppointments.where((a) => a.patientId == patient.id).toList()
-      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    final history = allAppointments.where((a) => a.patientId == patient.id).toList();
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _PatientHistorySheet(patient: patient, history: history),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PatientDetailScreen(
+          patientId: patient.id,
+          patientName: patient.name,
+          totalVisits: patient.totalVisits,
+          history: history,
+        ),
+      ),
     );
   }
 
@@ -189,6 +194,7 @@ class _PatientCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey.shade100),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.03),
@@ -199,13 +205,13 @@ class _PatientCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(16),
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: const Color(0xFF6AA9D8).withOpacity(0.15),
+              child: Text(
+                patient.name.isNotEmpty ? patient.name[0].toUpperCase() : 'P',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4889A8), fontSize: 20),
               ),
-              child: Icon(Icons.person_rounded, color: Colors.blue.shade600),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -215,32 +221,45 @@ class _PatientCard extends StatelessWidget {
                   Text(
                     patient.name,
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1D26),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Last visit: ${DateFormat('MMM d, y').format(patient.lastVisit)}',
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.history_rounded, size: 14, color: Colors.grey.shade500),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Last visit: ${DateFormat('MMM d, y').format(patient.lastVisit)}',
+                        style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF4889A8).withOpacity(0.1),
+                color: const Color(0xFF4889A8),
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(color: const Color(0xFF4889A8).withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
+                ],
               ),
-              child: Text(
-                '${patient.totalVisits} visits',
-                style: const TextStyle(
-                  color: Color(0xFF4889A8),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Column(
+                children: [
+                  Text(
+                    '${patient.totalVisits}',
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, height: 1),
+                  ),
+                  const Text(
+                    'Visits',
+                    style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600),
+                  ),
+                ],
               ),
             ),
           ],
@@ -250,145 +269,4 @@ class _PatientCard extends StatelessWidget {
   }
 }
 
-class _PatientHistorySheet extends StatelessWidget {
-  final _PatientSummary patient;
-  final List<Appointment> history;
-
-  const _PatientHistorySheet({required this.patient, required this.history});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 25,
-                  backgroundColor: Colors.blue.shade50,
-                  child: Icon(Icons.person_rounded, color: Colors.blue.shade600, size: 30),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      patient.name,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'Medical History (${history.length} records)',
-                      style: TextStyle(color: Colors.grey.shade500),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(24),
-              itemCount: history.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final app = history[index];
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.grey.shade100),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              DateFormat('MMM').format(app.dateTime).toUpperCase(),
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey),
-                            ),
-                            Text(
-                              app.dateTime.day.toString(),
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4889A8)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              app.reason ?? 'General Consultation',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              '${app.startTime} - ${app.endTime}',
-                              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _StatusChip(status: app.status),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  final String status;
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color;
-    switch (status.toLowerCase()) {
-      case 'completed': color = Colors.green; break;
-      case 'confirmed': color = Colors.blue; break;
-      case 'cancelled': color = Colors.red; break;
-      default: color = Colors.orange;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        status.toUpperCase(),
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-}
+// Replaced Bottom Sheet with Dedicated Detail Screen

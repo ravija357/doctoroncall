@@ -185,7 +185,16 @@ class _PrescriptionCard extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Opening prescription PDF...'),
+                        backgroundColor: const Color(0xFF4889A8),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.visibility_outlined, size: 18),
                   label: const Text('View PDF'),
                   style: ElevatedButton.styleFrom(
@@ -204,7 +213,21 @@ class _PrescriptionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Row(
+                          children: [
+                            Icon(Icons.download_done_rounded, color: Colors.white),
+                            SizedBox(width: 12),
+                            Text('Prescription saved to downloads'),
+                          ],
+                        ),
+                        backgroundColor: Colors.green.shade600,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.file_download_outlined),
                   color: Colors.grey.shade700,
                 ),

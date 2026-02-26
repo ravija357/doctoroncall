@@ -12,6 +12,11 @@ import 'package:doctoroncall/screens/shared/notification_screen.dart';
 import 'package:doctoroncall/screens/shared/profile_screen.dart';
 import 'package:doctoroncall/screens/doctor/availability_screen.dart';
 import 'package:doctoroncall/screens/doctor/my_patients_screen.dart';
+import 'package:doctoroncall/screens/doctor/revenue_screen.dart';
+import 'package:doctoroncall/screens/doctor/reviews_screen.dart';
+import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_bloc.dart';
+import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_state.dart';
+import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_event.dart';
 import 'package:intl/intl.dart';
 
 class DoctorDashboardScreen extends StatefulWidget {
@@ -22,6 +27,7 @@ class DoctorDashboardScreen extends StatefulWidget {
 }
 
 class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
+  List<dynamic> _cachedAppointments = [];
   @override
   void initState() {
     super.initState();
@@ -30,13 +36,19 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<AppointmentBloc>().add(const LoadDoctorAppointmentsRequested());
+        context.read<DoctorBloc>().add(const LoadDoctorsRequested());
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
@@ -149,7 +161,19 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
           // Live stat cards
           BlocBuilder<AppointmentBloc, AppointmentState>(
             builder: (context, state) {
-              final appointments = state is DoctorAppointmentsLoaded ? state.appointments : <dynamic>[];
+              if (state is DoctorAppointmentsLoaded) {
+                _cachedAppointments = state.appointments;
+              }
+              
+              if (state is AppointmentLoading && _cachedAppointments.isEmpty) {
+                return const SizedBox(
+                  height: 400,
+                  child: Center(child: CircularProgressIndicator(color: Color(0xFF6AA9D8))),
+                );
+              }
+              
+              final appointments = _cachedAppointments;
+              final bool isRefreshing = state is AppointmentLoading;
               
               // Only confirmed/completed/scheduled for today
               final today = appointments.where((a) {
@@ -163,26 +187,82 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               // All pending appointments regardless of date
               final pending = appointments.where((a) => a.status.toLowerCase() == 'pending').toList();
 
-              return Column(
-                children: [
-                  Row(
-                    children: [
-                      _StatCard(
-                        title: 'Total Appointments',
-                        value: state is AppointmentLoading ? '…' : '${appointments.length}',
-                        icon: Icons.calendar_today,
-                        color: Colors.blue,
-                      ),
-                      const SizedBox(width: 16),
-                      _StatCard(
-                        title: 'Pending Requests',
-                        value: state is AppointmentLoading ? '…' : '${pending.length}',
-                        icon: Icons.hourglass_empty,
-                        color: Colors.orange,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
+                  // Read current doctor to get rating and fee
+                  double rating = 0.0;
+                  double fees = 1000.0;
+                  
+                  return BlocBuilder<DoctorBloc, DoctorState>(
+                    builder: (context, doctorState) {
+                      if (doctorState is DoctorsLoaded) {
+                        final currentUserData = Hive.box(HiveBoxes.users).get('currentUser');
+                        if (currentUserData is Map) {
+                          final currentUserId = currentUserData['_id'] ?? currentUserData['id'];
+                          try {
+                            final myDoc = (doctorState as DoctorsLoaded).doctors.firstWhere((d) => d.userId == currentUserId);
+                            rating = myDoc.averageRating;
+                            fees = myDoc.fees;
+                          } catch (_) {
+                            rating = (currentUserData['averageRating'] as num?)?.toDouble() ?? 0.0;
+                            fees = (currentUserData['fees'] as num?)?.toDouble() ?? 1000.0;
+                          }
+                        }
+                      }
+                      
+                      final completed = appointments.where((a) {
+                        final s = a.status.toLowerCase();
+                        return s == 'completed' || s == 'confirmed';
+                      }).toList();
+                      final revenue = completed.length * fees;
+
+                      return Column(
+                        children: [
+                          if (isRefreshing)
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 12),
+                              child: LinearProgressIndicator(
+                                backgroundColor: Colors.transparent,
+                                color: Color(0xFF6AA9D8),
+                                minHeight: 2,
+                              ),
+                            ),
+                          Row(
+                            children: [
+                              _StatCard(
+                                title: 'Total Appointments',
+                                value: state is AppointmentLoading ? '…' : '${appointments.length}',
+                                icon: Icons.calendar_today,
+                                color: Colors.blue,
+                              ),
+                              const SizedBox(width: 16),
+                              _StatCard(
+                                title: 'Pending Requests',
+                                value: state is AppointmentLoading ? '…' : '${pending.length}',
+                                icon: Icons.hourglass_empty,
+                                color: Colors.orange,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              _StatCard(
+                                title: 'Total Revenue',
+                                value: state is AppointmentLoading ? '…' : 'Rs. ${revenue.toStringAsFixed(0)}',
+                                icon: Icons.account_balance_wallet_rounded,
+                                color: Colors.green,
+                              ),
+                              const SizedBox(width: 16),
+                              _StatCard(
+                                title: 'Average Rating',
+                                value: doctorState is DoctorLoading 
+                                    ? '…' 
+                                    : (rating > 0 ? rating.toStringAsFixed(1) : 'N/A'),
+                                icon: Icons.star_rounded,
+                                color: Colors.amber,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 32),
 
                   // --- SECTION: MANAGEMENT SERVICES ---
                   const Text(
@@ -194,124 +274,268 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _QuickActionCard(
-                        icon: Icons.calendar_month_rounded,
-                        label: 'Schedules',
-                        color: Colors.blue.shade50,
-                        iconColor: Colors.blue.shade600,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AvailabilityScreen())),
-                      ),
-                      const SizedBox(width: 12),
-                      _QuickActionCard(
-                        icon: Icons.people_rounded,
-                        label: 'My Patients',
-                        color: Colors.teal.shade50,
-                        iconColor: Colors.teal.shade600,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPatientsScreen())),
-                      ),
-                      const SizedBox(width: 12),
-                      _QuickActionCard(
-                        icon: Icons.analytics_rounded,
-                        label: 'Analytics',
-                        color: Colors.orange.shade50,
-                        iconColor: Colors.orange.shade600,
-                        onTap: () {}, // Planned feature
-                      ),
-                    ],
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 100,
+                          child: _QuickActionCard(
+                            icon: Icons.calendar_month_rounded,
+                            label: 'Schedules',
+                            color: Colors.blue.shade50,
+                            iconColor: Colors.blue.shade600,
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AvailabilityScreen())),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 100,
+                          child: _QuickActionCard(
+                            icon: Icons.people_rounded,
+                            label: 'Patients',
+                            color: Colors.teal.shade50,
+                            iconColor: Colors.teal.shade600,
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPatientsScreen())),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 100,
+                          child: _QuickActionCard(
+                            icon: Icons.payments_rounded,
+                            label: 'Revenue',
+                            color: Colors.green.shade50,
+                            iconColor: Colors.green.shade600,
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RevenueScreen())),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 100,
+                          child: _QuickActionCard(
+                            icon: Icons.star_rounded,
+                            label: 'Reviews',
+                            color: Colors.amber.shade50,
+                            iconColor: Colors.amber.shade600,
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewsScreen())),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 100,
+                          child: _QuickActionCard(
+                            icon: Icons.analytics_rounded,
+                            label: 'Analytics',
+                            color: Colors.orange.shade50,
+                            iconColor: Colors.orange.shade600,
+                            onTap: () {}, // Planned feature
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 32),
                   
-                  // Pending Requests Section
-                  if (pending.isNotEmpty) ...[
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Pending Requests',
-                        style: TextStyle(
-                          fontFamily: 'PlayfairDisplay',
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
+                  // --- PREMIUM RECENT REQUESTS SECTION ---
+                  Padding(
+                    padding: const EdgeInsets.only(right: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Recent Requests',
+                          style: TextStyle(
+                            fontFamily: 'PlayfairDisplay',
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
+                        GestureDetector(
+                          onTap: () {}, // Optional: Add a screen to view all requests
+                          child: const Text('View All', style: TextStyle(color: Color(0xFF6AA9D8), fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (pending.isEmpty)
+                    Container(
+                      height: 120,
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(right: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.grey.shade200, style: BorderStyle.solid),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inbox_outlined, size: 40, color: Colors.grey.shade400),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No pending requests right now.',
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      height: 170, // Taller for premium cards
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: pending.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 16),
+                        padding: const EdgeInsets.only(right: 20),
+                        itemBuilder: (context, i) {
+                          final ap = pending[i];
+                          final pName = ap.patientName ?? 'Patient Request';
+                          final formattedDate = DateFormat('MMM d, yyyy').format(ap.dateTime);
+                          final formattedTime = DateFormat('h:mm a').format(ap.dateTime);
+                          final reason = ap.reason ?? 'General Consultation';
+
+                          return Container(
+                            width: 280, // Wide card similar to Popular Doctor
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04), // Replaced deprecated .withOpacity with .withValues() later or leave for now
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Stack(
+                              children: [
+                                // Left Content
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 20, top: 20, bottom: 16, right: 80),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        pName,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.black87,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        reason,
+                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange.shade50,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.access_time_rounded, color: Colors.orange, size: 14),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              '$formattedDate • $formattedTime',
+                                              style: TextStyle(color: Colors.orange.shade800, fontSize: 11, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                
+                                // Right Side Graphic / Avatar
+                                Positioned(
+                                  right: -20,
+                                  bottom: -20,
+                                  child: Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF6AA9D8).withOpacity(0.05),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: 20,
+                                  top: 20,
+                                  child: CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: const Color(0xFF6AA9D8).withOpacity(0.1),
+                                    child: const Icon(Icons.person, color: Color(0xFF4889A8), size: 28),
+                                  ),
+                                ),
+
+                                // Action Buttons (Bottom Right)
+                                Positioned(
+                                  right: 12,
+                                  bottom: 12,
+                                  child: Row(
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          context.read<AppointmentBloc>().add(
+                                            UpdateAppointmentStatusRequested(
+                                              appointmentId: ap.id!,
+                                              status: 'cancelled',
+                                            ),
+                                          );
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.grey.shade200),
+                                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
+                                          ),
+                                          child: const Icon(Icons.close_rounded, color: Colors.red, size: 20),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      GestureDetector(
+                                        onTap: () {
+                                          context.read<AppointmentBloc>().add(
+                                            UpdateAppointmentStatusRequested(
+                                              appointmentId: ap.id!,
+                                              status: 'confirmed',
+                                            ),
+                                          );
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF4889A8),
+                                            shape: BoxShape.circle,
+                                            boxShadow: [BoxShadow(color: const Color(0xFF4889A8).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))],
+                                          ),
+                                          child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: pending.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, i) {
-                        final ap = pending[i];
-                        final formattedDate = DateFormat('MMM d, yyyy').format(ap.dateTime);
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.orange.shade200),
-                            boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.05), blurRadius: 10)],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.shade50,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.person_outline, color: Colors.orange),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      ap.patientName ?? 'Patient Request',
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
-                                    ),
-                                    Text(
-                                      '$formattedDate at ${DateFormat('h:mm a').format(ap.dateTime)}',
-                                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.check_circle, color: Colors.green),
-                                    onPressed: () {
-                                      context.read<AppointmentBloc>().add(
-                                        UpdateAppointmentStatusRequested(
-                                          appointmentId: ap.id!,
-                                          status: 'confirmed',
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.cancel, color: Colors.red),
-                                    onPressed: () {
-                                      context.read<AppointmentBloc>().add(
-                                        UpdateAppointmentStatusRequested(
-                                          appointmentId: ap.id!,
-                                          status: 'cancelled',
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              )
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 32),
-                  ],
+                  const SizedBox(height: 32),
 
                   // Today's Schedule Section
                   const Align(
@@ -392,11 +616,14 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 ],
               );
             },
+          );
+        },
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _StatusChip extends StatelessWidget {
@@ -477,23 +704,22 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
@@ -516,7 +742,6 @@ class _QuickActionCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }

@@ -16,12 +16,6 @@ class DoctorBloc extends Bloc<DoctorEvent, DoctorState> {
   }) : super(DoctorInitial()) {
     on<LoadDoctorsRequested>(_onLoadDoctorsRequested);
     on<UpdateDoctorScheduleRequested>(_onUpdateDoctorScheduleRequested);
-
-    // Listen for cross-platform profile sync events
-    _syncSubscription = chatRepository.doctorSyncStream().listen((_) {
-      print('[SOCKET] Doctor Profile Sync Ping');
-      add(const LoadDoctorsRequested());
-    });
   }
 
   @override

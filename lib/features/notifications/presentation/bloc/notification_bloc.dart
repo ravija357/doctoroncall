@@ -27,12 +27,6 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
         add(NewNotificationReceived(NotificationModel.fromJson(data)));
       }
     });
-
-    // Listen for cross-platform synchronization pings (e.g. mark as read on web)
-    chatRemoteDataSource.notificationSyncStream.listen((data) {
-      print('[SOCKET] Notification Sync Ping: $data');
-      add(LoadNotificationsRequested());
-    });
   }
 
   Future<void> _onLoadNotifications(

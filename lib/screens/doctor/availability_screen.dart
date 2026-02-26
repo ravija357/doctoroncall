@@ -87,7 +87,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   Widget build(BuildContext context) {
     return BlocListener<DoctorBloc, DoctorState>(
       listener: (context, state) {
-        if (state is DoctorsLoaded && _isInitialLoad) {
+        if (state is DoctorsLoaded) {
           _loadMySchedule(state);
         }
         if (state is DoctorScheduleUpdated) {
@@ -236,31 +236,38 @@ class _ScheduleItem extends StatelessWidget {
             child: Text(
               schedule.day,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: schedule.isOff ? Colors.grey : Colors.black87,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           Expanded(
-            flex: 3,
+            flex: 4,
             child: Opacity(
               opacity: schedule.isOff ? 0.3 : 1.0,
-              child: Row(
-                children: [
-                  _TimeButton(
-                    label: _formatTime(schedule.startTime),
-                    onTap: schedule.isOff ? null : () => onTimeTap(true),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4),
-                    child: Text('–', style: TextStyle(color: Colors.grey)),
-                  ),
-                  _TimeButton(
-                    label: _formatTime(schedule.endTime),
-                    onTap: schedule.isOff ? null : () => onTimeTap(false),
-                  ),
-                ],
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _TimeButton(
+                      label: _formatTime(schedule.startTime),
+                      onTap: schedule.isOff ? null : () => onTimeTap(true),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4),
+                      child: Text('–', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    ),
+                    _TimeButton(
+                      label: _formatTime(schedule.endTime),
+                      onTap: schedule.isOff ? null : () => onTimeTap(false),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
