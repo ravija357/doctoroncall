@@ -12,6 +12,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
   final NotificationRepository repository;
   final ChatRemoteDataSource chatRemoteDataSource;
   StreamSubscription? _notificationSubscription;
+  StreamSubscription? _syncSubscription;
 
   NotificationBloc({
     required this.repository,
@@ -21,11 +22,16 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     on<MarkNotificationReadRequested>(_onMarkRead);
     on<MarkAllAsReadRequested>(_onMarkAllRead);
     on<NewNotificationReceived>(_onNewNotification);
+    on<SyncNotifications>((event, emit) => add(LoadNotificationsRequested()));
 
     _notificationSubscription = chatRemoteDataSource.notificationStream.listen((data) {
       if (data != null) {
         add(NewNotificationReceived(NotificationModel.fromJson(data)));
       }
+    });
+
+    _syncSubscription = chatRemoteDataSource.notificationSyncStream.listen((_) {
+      add(const SyncNotifications());
     });
   }
 
@@ -94,6 +100,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
   @override
   Future<void> close() {
     _notificationSubscription?.cancel();
+    _syncSubscription?.cancel();
     return super.close();
   }
 }

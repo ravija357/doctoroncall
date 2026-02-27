@@ -20,3 +20,11 @@ class UpdateDoctorScheduleRequested extends DoctorEvent {
   @override
   List<Object> get props => [schedules];
 }
+
+class SyncDoctors extends DoctorEvent {
+  const SyncDoctors();
+}
+
+class SyncSchedule extends DoctorEvent {
+  const SyncSchedule();
+}

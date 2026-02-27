@@ -54,3 +54,7 @@ class LoadAvailabilityRequested extends AppointmentEvent {
   @override
   List<Object> get props => [doctorId, date];
 }
+
+class SyncAppointments extends AppointmentEvent {
+  const SyncAppointments();
+}

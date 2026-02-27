@@ -57,10 +57,6 @@ class _IncomingCallWrapper extends StatefulWidget {
 class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
   StreamSubscription? _incomingCallSub;
   StreamSubscription? _messageSub;
-  StreamSubscription? _appointmentSyncSub;
-  StreamSubscription? _notificationSyncSub;
-  StreamSubscription? _doctorSyncSub;
-  StreamSubscription? _scheduleSyncSub;
 
   @override
   void initState() {
@@ -69,7 +65,6 @@ class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _listenForIncomingCalls();
       _listenForMessages();
-      _listenForSyncEvents();
     });
   }
 
@@ -132,43 +127,6 @@ class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
     });
   }
 
-  void _listenForSyncEvents() {
-    final dataSource = sl<ChatRemoteDataSource>();
-
-    _appointmentSyncSub = dataSource.appointmentSyncStream.listen((_) {
-      if (!mounted) return;
-      final authState = context.read<AuthBloc>().state;
-      if (authState is AuthAuthenticated) {
-        if (authState.user.role.toUpperCase() == 'DOCTOR') {
-          context.read<AppointmentBloc>().add(LoadDoctorAppointmentsRequested());
-        } else {
-          context.read<AppointmentBloc>().add(LoadAppointmentsRequested(userId: authState.user.id ?? ''));
-        }
-      }
-    });
-
-    _notificationSyncSub = dataSource.notificationSyncStream.listen((_) {
-      if (!mounted) return;
-      context.read<NotificationBloc>().add(LoadNotificationsRequested());
-    });
-
-    _doctorSyncSub = dataSource.doctorSyncStream.listen((_) {
-      if (!mounted) return;
-      context.read<DoctorBloc>().add(LoadDoctorsRequested());
-    });
-
-    _scheduleSyncSub = dataSource.scheduleSyncStream.listen((_) {
-      if (!mounted) return;
-      final authState = context.read<AuthBloc>().state;
-      if (authState is AuthAuthenticated) {
-        if (authState.user.role.toUpperCase() == 'DOCTOR') {
-          context.read<AppointmentBloc>().add(LoadDoctorAppointmentsRequested());
-        } else {
-          context.read<DoctorBloc>().add(LoadDoctorsRequested());
-        }
-      }
-    });
-  }
 
   OverlayEntry? _toastEntry;
 
@@ -205,10 +163,6 @@ class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
   void dispose() {
     _incomingCallSub?.cancel();
     _messageSub?.cancel();
-    _appointmentSyncSub?.cancel();
-    _notificationSyncSub?.cancel();
-    _doctorSyncSub?.cancel();
-    _scheduleSyncSub?.cancel();
     super.dispose();
   }
 

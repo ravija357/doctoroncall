@@ -27,3 +27,7 @@ class NewNotificationReceived extends NotificationEvent {
   @override
   List<Object?> get props => [notification];
 }
+
+class SyncNotifications extends NotificationEvent {
+  const SyncNotifications();
+}

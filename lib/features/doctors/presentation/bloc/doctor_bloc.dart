@@ -8,7 +8,7 @@ import 'doctor_state.dart';
 class DoctorBloc extends Bloc<DoctorEvent, DoctorState> {
   final DoctorRepository doctorRepository;
   final ChatRepository chatRepository;
-  StreamSubscription? _syncSubscription;
+  final List<StreamSubscription> _subscriptions = [];
 
   DoctorBloc({
     required this.doctorRepository,
@@ -16,11 +16,23 @@ class DoctorBloc extends Bloc<DoctorEvent, DoctorState> {
   }) : super(DoctorInitial()) {
     on<LoadDoctorsRequested>(_onLoadDoctorsRequested);
     on<UpdateDoctorScheduleRequested>(_onUpdateDoctorScheduleRequested);
+    on<SyncDoctors>((event, emit) => add(const LoadDoctorsRequested()));
+    on<SyncSchedule>((event, emit) => add(const LoadDoctorsRequested()));
+
+    _subscriptions.add(chatRepository.doctorSyncStream().listen((_) {
+      add(const SyncDoctors());
+    }));
+
+    _subscriptions.add(chatRepository.scheduleSyncStream().listen((_) {
+      add(const SyncSchedule());
+    }));
   }
 
   @override
-  Future<void> close() {
-    _syncSubscription?.cancel();
+  Future<void> close() async {
+    for (final sub in _subscriptions) {
+      await sub.cancel();
+    }
     return super.close();
   }
 

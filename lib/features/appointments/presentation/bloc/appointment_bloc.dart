@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:doctoroncall/features/appointments/domain/repositories/appointment_repository.dart';
 import 'package:doctoroncall/features/messages/domain/repositories/chat_repository.dart';
 import 'package:doctoroncall/core/error/server_exception.dart';
+import 'package:doctoroncall/core/constants/hive_boxes.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'appointment_event.dart';
 import 'appointment_state.dart';
 
@@ -21,6 +23,11 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     on<BookAppointmentRequested>(_onBookAppointmentRequested);
     on<CancelAppointmentRequested>(_onCancelAppointmentRequested);
     on<LoadAvailabilityRequested>(_onLoadAvailabilityRequested);
+    on<SyncAppointments>(_onSyncAppointments);
+
+    _syncSubscription = chatRepository.appointmentSyncStream().listen((_) {
+      add(const SyncAppointments());
+    });
   }
 
   @override
@@ -114,6 +121,24 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
       emit(AppointmentError(message: e.message));
     } catch (e) {
       emit(AppointmentError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onSyncAppointments(
+    SyncAppointments event,
+    Emitter<AppointmentState> emit,
+  ) async {
+    final box = Hive.box(HiveBoxes.users);
+    final userData = box.get('currentUser');
+    final String? role = userData is Map ? userData['role'] : box.get('role');
+
+    if (role?.toLowerCase() == 'doctor') {
+      add(const LoadDoctorAppointmentsRequested());
+    } else {
+      final String? userId = userData is Map ? userData['id'] : box.get('userId');
+      if (userId != null) {
+        add(LoadAppointmentsRequested(userId: userId));
+      }
     }
   }
 }
