@@ -40,3 +40,5 @@ class LogoutRequested extends AuthEvent {}
 
 /// Check if user is already authenticated (auto-login from Hive cache)
 class CheckAuthStatus extends AuthEvent {}
+
+class SyncProfileRequested extends AuthEvent {}

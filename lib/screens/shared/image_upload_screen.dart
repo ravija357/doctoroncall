@@ -8,6 +8,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/hive_boxes.dart';
 import '../../core/services/image_upload_service.dart';
+import '../../core/di/injection_container.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
 
 class ImageUploadScreen extends StatefulWidget {
   const ImageUploadScreen({super.key});
@@ -78,6 +80,14 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
           final updatedUser = Map<dynamic, dynamic>.from(userData);
           updatedUser['profileImage'] = imageUrl;
           box.put('currentUser', updatedUser);
+        }
+
+        // ✅ PERSIST TO BACKEND (Triggers socket sync for web)
+        try {
+          await sl<AuthRepository>().updateProfile({'image': serverPath});
+          debugPrint('✅ Server profile updated with new image path');
+        } catch (e) {
+          debugPrint('⚠️ Error persisting image to backend: $e');
         }
 
         setState(() {

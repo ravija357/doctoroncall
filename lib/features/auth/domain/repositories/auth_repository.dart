@@ -5,4 +5,6 @@ abstract class AuthRepository {
   Future<UserModel> login(String email, String password);
   Future<void> logout();
   Future<UserModel?> getCachedUser();
+  Future<UserModel> getProfile();
+  Future<UserModel> updateProfile(Map<String, dynamic> data);
 }

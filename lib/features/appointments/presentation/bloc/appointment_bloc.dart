@@ -128,15 +128,20 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     SyncAppointments event,
     Emitter<AppointmentState> emit,
   ) async {
+    print('[SOCKET] AppointmentBloc: Processing SyncAppointments event');
     final box = Hive.box(HiveBoxes.users);
     final userData = box.get('currentUser');
     final String? role = userData is Map ? userData['role'] : box.get('role');
+    print('[SOCKET] AppointmentBloc: Detected role: $role');
 
     if (role?.toLowerCase() == 'doctor') {
+      print('[SOCKET] AppointmentBloc: Triggering LoadDoctorAppointmentsRequested');
       add(const LoadDoctorAppointmentsRequested());
     } else {
       final String? userId = userData is Map ? userData['id'] : box.get('userId');
+      print('[SOCKET] AppointmentBloc: User ID found: $userId');
       if (userId != null) {
+        print('[SOCKET] AppointmentBloc: Triggering LoadAppointmentsRequested');
         add(LoadAppointmentsRequested(userId: userId));
       }
     }

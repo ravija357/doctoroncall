@@ -2,17 +2,36 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:doctoroncall/core/error/server_exception.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../data/models/user_model.dart';
+import 'package:doctoroncall/features/messages/domain/repositories/chat_repository.dart';
+import 'dart:async';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
+  final ChatRepository chatRepository;
+  StreamSubscription? _syncSubscription;
 
-  AuthBloc({required this.authRepository}) : super(AuthInitial()) {
+  AuthBloc({
+    required this.authRepository,
+    required this.chatRepository,
+  }) : super(AuthInitial()) {
     on<LoginRequested>(_onLoginRequested);
     on<SignupRequested>(_onSignupRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<CheckAuthStatus>(_onCheckAuthStatus);
+    on<SyncProfileRequested>(_onSyncProfileRequested);
+
+    _syncSubscription = chatRepository.doctorSyncStream().listen((_) {
+      print('[AUTH] Profile Sync Signal Received');
+      add(SyncProfileRequested());
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _syncSubscription?.cancel();
+    return super.close();
   }
 
   Future<void> _onCheckAuthStatus(
@@ -79,5 +98,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     await authRepository.logout();
     emit(AuthUnauthenticated());
+  }
+
+  Future<void> _onSyncProfileRequested(
+    SyncProfileRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final user = await authRepository.getProfile();
+      if (state is AuthAuthenticated) {
+        emit(AuthAuthenticated(user: user));
+      }
+    } catch (e) {
+      print('[AUTH] Sync Profile Error: $e');
+    }
   }
 }

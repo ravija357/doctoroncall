@@ -4,6 +4,7 @@ import '../models/user_model.dart';
 import 'package:doctoroncall/core/error/server_exception.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../../../core/constants/hive_boxes.dart';
+import '../../../../core/constants/api_constants.dart';
 
 class AuthRemoteDataSource {
   final ApiClient apiClient;
@@ -101,6 +102,66 @@ class AuthRemoteDataSource {
     }
     if (Hive.isBoxOpen(HiveBoxes.chatContacts)) {
       await Hive.box(HiveBoxes.chatContacts).clear();
+    }
+  }
+
+  Future<UserModel> getProfile() async {
+    try {
+      final response = await apiClient.dio.get('/auth/me');
+      if (response.statusCode == 200) {
+        final userData = response.data['user'];
+        final userModel = UserModel.fromMap(userData);
+
+        // Update cache
+        final box = Hive.box(HiveBoxes.users);
+        await box.put('currentUser', userModel.toMap());
+        
+        // Also update loose fields for compatibility
+        await box.put('firstName', userModel.firstName);
+        await box.put('lastName', userModel.lastName);
+        await box.put('email', userModel.email);
+        await box.put('profileImage', userModel.profileImage);
+
+        return userModel;
+      } else {
+        throw ServerException(message: 'Failed to fetch profile');
+      }
+    } on DioException catch (e) {
+      throw ServerException(message: e.response?.data['message'] ?? e.message ?? 'Failed to fetch profile');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<UserModel> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await apiClient.dio.put(
+        '/auth/${await apiClient.secureStorage.read(key: 'user_id')}',
+        data: data,
+      );
+
+      if (response.statusCode == 200) {
+        final userData = response.data['data'];
+        final userModel = UserModel.fromMap(userData);
+
+        // Update cache
+        final box = Hive.box(HiveBoxes.users);
+        await box.put('currentUser', userModel.toMap());
+        
+        // Also update loose fields for compatibility
+        await box.put('firstName', userModel.firstName);
+        await box.put('lastName', userModel.lastName);
+        await box.put('email', userModel.email);
+        await box.put('profileImage', userModel.profileImage);
+
+        return userModel;
+      } else {
+        throw ServerException(message: 'Failed to update profile');
+      }
+    } on DioException catch (e) {
+      throw ServerException(message: e.response?.data['message'] ?? e.message ?? 'Failed to update profile');
+    } catch (e) {
+      rethrow;
     }
   }
 }

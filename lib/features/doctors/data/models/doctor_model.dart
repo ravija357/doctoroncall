@@ -119,6 +119,7 @@ class DoctorModel extends Doctor {
       'hospital': hospital,
       'averageRating': averageRating,
       'totalReviews': totalReviews,
+      'schedules': schedules?.map((e) => (e as ScheduleModel).toJson()).toList(),
     };
   }
 
@@ -136,6 +137,11 @@ class DoctorModel extends Doctor {
       hospital: map['hospital'] as String?,
       averageRating: (map['averageRating'] as num?)?.toDouble() ?? 0,
       totalReviews: map['totalReviews'] as int? ?? 0,
+      schedules: map['schedules'] != null
+          ? (map['schedules'] as List)
+              .map((s) => ScheduleModel.fromJson(Map<String, dynamic>.from(s)))
+              .toList()
+          : null,
     );
   }
 }

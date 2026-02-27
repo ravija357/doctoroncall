@@ -25,10 +25,17 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   @override
   void initState() {
     super.initState();
-    // Load current doctor's schedule from bloc state if available
+    _checkAndLoad();
+  }
+
+  void _checkAndLoad() {
     final state = context.read<DoctorBloc>().state;
+    print('[AVAILABILITY] Current state: $state');
     if (state is DoctorsLoaded) {
       _loadMySchedule(state);
+    } else {
+      print('[AVAILABILITY] Triggering LoadDoctorsRequested');
+      context.read<DoctorBloc>().add(const LoadDoctorsRequested());
     }
   }
 
@@ -36,9 +43,16 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
     final box = Hive.box(HiveBoxes.users);
     final userData = box.get('currentUser');
     final String? myUserId = userData is Map ? userData['id'] : box.get('userId');
+    
+    print('[AVAILABILITY] My User ID: $myUserId');
+    print('[AVAILABILITY] Total doctors in state: ${state.doctors.length}');
 
     try {
-      final me = state.doctors.firstWhere((d) => d.userId == myUserId);
+      final me = state.doctors.firstWhere((d) {
+        print('[AVAILABILITY] Checking doctor with userId: ${d.userId}');
+        return d.userId == myUserId;
+      });
+      print('[AVAILABILITY] Found me! Schedules count: ${me.schedules?.length ?? 0}');
       setState(() {
         _schedules = List.from(me.schedules ?? 
           _days.map((day) => Schedule(day: day, startTime: "09:00", endTime: "17:00", isOff: false)).toList()
@@ -46,7 +60,11 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         _isInitialLoad = false;
       });
     } catch (e) {
-      // Not found or not loaded yet
+      print('[AVAILABILITY] Error finding me in doctors list: $e');
+      // If we are initialized but haven't found me, maybe show an error or blank
+      setState(() {
+        _isInitialLoad = false;
+      });
     }
   }
 

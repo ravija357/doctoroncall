@@ -51,7 +51,7 @@ Future<void> initDependencies() async {
   // Auth
   sl.registerLazySingleton<AuthRemoteDataSource>(() => AuthRemoteDataSource(apiClient: sl()));
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(remoteDataSource: sl()));
-  sl.registerFactory(() => AuthBloc(authRepository: sl()));
+  sl.registerFactory(() => AuthBloc(authRepository: sl(), chatRepository: sl()));
 
   // Doctors
   sl.registerLazySingleton<DoctorRemoteDataSource>(

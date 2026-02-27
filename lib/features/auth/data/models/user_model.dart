@@ -49,7 +49,7 @@ class UserModel extends HiveObject {
       lastName: map['lastName'] as String? ?? 'Unknown',
       email: map['email'] as String,
       role: map['role'] as String? ?? 'PATIENT',
-      profileImage: map['profileImage'] as String?,
+      profileImage: (map['profileImage'] ?? map['image']) as String?,
     );
   }
 }

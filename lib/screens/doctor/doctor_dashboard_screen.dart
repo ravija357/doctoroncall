@@ -14,10 +14,12 @@ import 'package:doctoroncall/screens/doctor/availability_screen.dart';
 import 'package:doctoroncall/screens/doctor/my_patients_screen.dart';
 import 'package:doctoroncall/screens/doctor/revenue_screen.dart';
 import 'package:doctoroncall/screens/doctor/reviews_screen.dart';
+import 'package:doctoroncall/screens/doctor/pending_requests_screen.dart';
 import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_bloc.dart';
 import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_state.dart';
 import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_event.dart';
 import 'package:intl/intl.dart';
+import 'package:doctoroncall/screens/patient/appointment_list_screen.dart';
 
 class DoctorDashboardScreen extends StatefulWidget {
   const DoctorDashboardScreen({super.key});
@@ -32,6 +34,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   void initState() {
     super.initState();
     context.read<AppointmentBloc>().add(const LoadDoctorAppointmentsRequested());
+    context.read<DoctorBloc>().add(const LoadDoctorsRequested());
   }
 
   @override
@@ -184,8 +187,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 return isToday && a.status.toLowerCase() != 'pending';
               }).toList();
 
-              // All pending appointments regardless of date
-              final pending = appointments.where((a) => a.status.toLowerCase() == 'pending').toList();
+              // All pending appointments regardless of date, sorted by date (newest first)
+              final pending = appointments.where((a) => a.status.toLowerCase() == 'pending').toList()
+                ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+
+              print('[DASHBOARD] Total appointments: ${appointments.length}, Pending: ${pending.length}');
 
                   // Read current doctor to get rating and fee
                   double rating = 0.0;
@@ -344,7 +350,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Recent Requests',
+                          'Recent Activity',
                           style: TextStyle(
                             fontFamily: 'PlayfairDisplay',
                             fontSize: 20,
@@ -352,14 +358,19 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {}, // Optional: Add a screen to view all requests
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => AppointmentListScreen(isFromBottomNav: false))
+                            );
+                          },
                           child: const Text('View All', style: TextStyle(color: Color(0xFF6AA9D8), fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                  if (pending.isEmpty)
+                  if (appointments.isEmpty)
                     Container(
                       height: 120,
                       width: double.infinity,
@@ -372,10 +383,10 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.inbox_outlined, size: 40, color: Colors.grey.shade400),
+                          Icon(Icons.history_rounded, size: 40, color: Colors.grey.shade400),
                           const SizedBox(height: 12),
                           Text(
-                            'No pending requests right now.',
+                            'No recent activity right now.',
                             style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                           ),
                         ],
@@ -383,148 +394,100 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                     )
                   else
                     SizedBox(
-                      height: 170, // Taller for premium cards
+                      height: 190, // Taller to accommodate status chip
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
-                        itemCount: pending.length,
+                        itemCount: appointments.length > 10 ? 10 : appointments.length,
                         separatorBuilder: (_, __) => const SizedBox(width: 16),
                         padding: const EdgeInsets.only(right: 20),
                         itemBuilder: (context, i) {
-                          final ap = pending[i];
+                          final ap = appointments[i];
                           final pName = ap.patientName ?? 'Patient Request';
                           final formattedDate = DateFormat('MMM d, yyyy').format(ap.dateTime);
-                          final formattedTime = DateFormat('h:mm a').format(ap.dateTime);
-                          final reason = ap.reason ?? 'General Consultation';
+                          final status = ap.status.toLowerCase();
+
+                          Color statusColor;
+                          IconData statusIcon;
+                          if (status == 'confirmed') {
+                            statusColor = Colors.green;
+                            statusIcon = Icons.check_circle_outline;
+                          } else if (status == 'pending') {
+                            statusColor = Colors.orange;
+                            statusIcon = Icons.hourglass_empty;
+                          } else if (status == 'cancelled') {
+                            statusColor = Colors.red;
+                            statusIcon = Icons.cancel_outlined;
+                          } else if (status == 'completed') {
+                            statusColor = const Color(0xFF4889A8);
+                            statusIcon = Icons.task_alt_rounded;
+                          } else {
+                            statusColor = Colors.blue;
+                            statusIcon = Icons.info_outline;
+                          }
 
                           return Container(
-                            width: 280, // Wide card similar to Popular Doctor
+                            width: 220,
+                            padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(30),
+                              borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.04), // Replaced deprecated .withOpacity with .withValues() later or leave for now
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 5),
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
-                            child: Stack(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Left Content
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 20, top: 20, bottom: 16, right: 80),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        pName,
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.black87,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 18,
+                                      backgroundColor: const Color(0xFF4889A8).withOpacity(0.1),
+                                      child: Text(
+                                        pName.isNotEmpty ? pName[0].toUpperCase() : 'P',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4889A8), fontSize: 14),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        reason,
-                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const Spacer(),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: Colors.orange.shade50,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(Icons.access_time_rounded, color: Colors.orange, size: 14),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              '$formattedDate • $formattedTime',
-                                              style: TextStyle(color: Colors.orange.shade800, fontSize: 11, fontWeight: FontWeight.bold),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                
-                                // Right Side Graphic / Avatar
-                                Positioned(
-                                  right: -20,
-                                  bottom: -20,
-                                  child: Container(
-                                    width: 120,
-                                    height: 120,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF6AA9D8).withOpacity(0.05),
-                                      shape: BoxShape.circle,
                                     ),
-                                  ),
-                                ),
-                                Positioned(
-                                  right: 20,
-                                  top: 20,
-                                  child: CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: const Color(0xFF6AA9D8).withOpacity(0.1),
-                                    child: const Icon(Icons.person, color: Color(0xFF4889A8), size: 28),
-                                  ),
-                                ),
-
-                                // Action Buttons (Bottom Right)
-                                Positioned(
-                                  right: 12,
-                                  bottom: 12,
-                                  child: Row(
-                                    children: [
-                                      GestureDetector(
-                                        onTap: () {
-                                          context.read<AppointmentBloc>().add(
-                                            UpdateAppointmentStatusRequested(
-                                              appointmentId: ap.id!,
-                                              status: 'cancelled',
-                                            ),
-                                          );
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.grey.shade200),
-                                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
-                                          ),
-                                          child: const Icon(Icons.close_rounded, color: Colors.red, size: 20),
-                                        ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        pName,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      const SizedBox(width: 8),
-                                      GestureDetector(
-                                        onTap: () {
-                                          context.read<AppointmentBloc>().add(
-                                            UpdateAppointmentStatusRequested(
-                                              appointmentId: ap.id!,
-                                              status: 'confirmed',
-                                            ),
-                                          );
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF4889A8),
-                                            shape: BoxShape.circle,
-                                            boxShadow: [BoxShadow(color: const Color(0xFF4889A8).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))],
-                                          ),
-                                          child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
-                                        ),
+                                    ),
+                                  ],
+                                ),
+                                const Spacer(),
+                                Text(
+                                  formattedDate,
+                                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  ap.startTime,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF4889A8)),
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: statusColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(statusIcon, size: 12, color: statusColor),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        status.toUpperCase(),
+                                        style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
                                       ),
                                     ],
                                   ),
