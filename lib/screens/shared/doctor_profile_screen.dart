@@ -1,27 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:doctoroncall/screens/patient/book_appointment_screen.dart';
 import 'package:doctoroncall/screens/shared/chat_screen.dart';
 import 'package:doctoroncall/features/doctors/domain/entities/doctor.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_bloc.dart';
+import 'package:doctoroncall/features/appointments/presentation/providers/appointment_provider.dart';
 import 'package:doctoroncall/core/network/api_client.dart';
 import 'package:doctoroncall/core/di/injection_container.dart';
 import 'package:doctoroncall/core/utils/image_utils.dart';
-import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_bloc.dart';
-import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_event.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_event.dart';
+import 'package:doctoroncall/features/doctors/presentation/providers/doctor_provider.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-class DoctorProfileScreen extends StatefulWidget {
+class DoctorProfileScreen extends ConsumerStatefulWidget {
   final Doctor doctor;
   const DoctorProfileScreen({super.key, required this.doctor});
 
   @override
-  State<DoctorProfileScreen> createState() => _DoctorProfileScreenState();
+  ConsumerState<DoctorProfileScreen> createState() => _DoctorProfileScreenState();
 }
 
-class _DoctorProfileScreenState extends State<DoctorProfileScreen>
+class _DoctorProfileScreenState extends ConsumerState<DoctorProfileScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -99,7 +97,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
 
       // Refresh doctor list so dashboard & top doctors also update
       if (mounted) {
-        context.read<DoctorBloc>().add(LoadDoctorsRequested());
+        ref.read(doctorNotifierProvider.notifier).loadDoctors();
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -126,9 +124,10 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
   @override
   Widget build(BuildContext context) {
     final doctor = widget.doctor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: FadeTransition(
         opacity: _fadeAnim,
         child: CustomScrollView(
@@ -136,23 +135,24 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
             // App Bar
             SliverAppBar(
               pinned: true,
-              backgroundColor: Colors.white,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               elevation: 0,
               leading: GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
                   margin: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4F8),
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(12),
+                    border: isDark ? Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)) : null,
                   ),
-                  child: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF344955), size: 18),
+                  child: Icon(Icons.arrow_back_ios_new, color: isDark ? Colors.white : const Color(0xFF344955), size: 18),
                 ),
               ),
               centerTitle: true,
-              title: const Text(
+              title: Text(
                 'Doctor Profile',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 19, color: Color(0xFF1A1D26)),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
 
@@ -167,22 +167,23 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 4)),
+                          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.04), blurRadius: 16, offset: const Offset(0, 4)),
                         ],
+                        border: isDark ? Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)) : null,
                       ),
                       child: Column(
                         children: [
                           Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFF6AA9D8).withOpacity(0.2), width: 3),
+                              border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.2), width: 3),
                             ),
                             child: CircleAvatar(
                               radius: 50,
-                              backgroundColor: Colors.grey.shade100,
+                              backgroundColor: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.grey.shade100,
                               backgroundImage: ImageUtils.getImageProvider(doctor.image),
                               child: doctor.image == null
                                   ? const Icon(Icons.person, size: 50, color: Colors.grey)
@@ -192,12 +193,12 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                           const SizedBox(height: 16),
                           Text(
                             _doctorName,
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF1A1D26)),
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             '${doctor.specialization} • ${doctor.experience} Yrs Experience',
-                            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
                           ),
                           const SizedBox(height: 12),
                           // Rating display
@@ -214,7 +215,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                               const SizedBox(width: 8),
                               Text(
                                 _displayRating.toStringAsFixed(1),
-                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF1A1D26)),
+                                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Theme.of(context).textTheme.titleLarge?.color),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -246,16 +247,17 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                         width: double.infinity,
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(18),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 3))],
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.03), blurRadius: 10, offset: const Offset(0, 3))],
+                          border: isDark ? Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)) : null,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('About', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF1A1D26))),
+                            Text('About', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
-                            Text(doctor.bio, style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.5)),
+                            Text(doctor.bio, style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade700, height: 1.5)),
                           ],
                         ),
                       ),
@@ -267,13 +269,13 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(22),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 14, offset: const Offset(0, 4))],
-                        border: Border.all(color: const Color(0xFF6AA9D8).withOpacity(0.1)),
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.04), blurRadius: 14, offset: const Offset(0, 4))],
+                        border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.1)),
                       ),
                       child: _reviewSubmitted
-                          ? _buildReviewSuccess()
+                          ? _buildReviewSuccess(context)
                           : Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -288,9 +290,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                                       child: const Icon(Icons.star_rounded, color: Colors.amber, size: 20),
                                     ),
                                     const SizedBox(width: 10),
-                                    const Text(
+                                    Text(
                                       'Rate this Doctor',
-                                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17, color: Color(0xFF1A1D26)),
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),
@@ -323,7 +325,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                                             padding: const EdgeInsets.symmetric(horizontal: 6),
                                             child: Icon(
                                               _userRating >= starIndex ? Icons.star_rounded : Icons.star_outline_rounded,
-                                              color: _userRating >= starIndex ? Colors.amber : Colors.grey.shade300,
+                                              color: _userRating >= starIndex ? Colors.amber : isDark ? Colors.white12 : Colors.grey.shade300,
                                               size: 44,
                                             ),
                                           ),
@@ -350,19 +352,20 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                                 // Comment field
                                 Container(
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF8FAFB),
+                                    color: isDark ? Theme.of(context).scaffoldBackgroundColor : Theme.of(context).scaffoldBackgroundColor,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: Colors.grey.shade200),
+                                    border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
                                   ),
                                   child: TextField(
                                     controller: _commentController,
                                     maxLines: 3,
                                     decoration: InputDecoration(
                                       hintText: 'Share your experience (optional)',
-                                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                                      hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                                       border: InputBorder.none,
                                       contentPadding: const EdgeInsets.all(14),
                                     ),
+                                    style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 14),
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -421,17 +424,17 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: Theme.of(context).cardColor,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFF6AA9D8).withOpacity(0.3)),
+                                border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.3)),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.chat_bubble_outline, color: Color(0xFF6AA9D8), size: 20),
-                                  SizedBox(width: 8),
-                                  Text('Chat', style: TextStyle(color: Color(0xFF6AA9D8), fontWeight: FontWeight.w700, fontSize: 15)),
-                                ],
+                                  children: [
+                                    Icon(Icons.chat_bubble_outline, color: Theme.of(context).primaryColor, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text('Chat', style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.w700, fontSize: 15)),
+                                  ],
                               ),
                             ),
                           ),
@@ -444,10 +447,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => BlocProvider(
-                                    create: (_) => sl<AppointmentBloc>(),
-                                    child: BookAppointmentScreen(doctor: doctor),
-                                  ),
+                                  builder: (_) => BookAppointmentScreen(doctor: doctor),
                                 ),
                               ).then((_) {
                                 final box = Hive.box(HiveBoxes.users);
@@ -459,17 +459,17 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
                                   userId = box.get('userId');
                                 }
                                 if (userId != null) {
-                                  context.read<AppointmentBloc>().add(LoadAppointmentsRequested(userId: userId));
+                                  ref.read(appointmentNotifierProvider.notifier).loadAppointments(userId);
                                 }
                               });
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(colors: [Color(0xFF6AA9D8), Color(0xFF4A8ABC)]),
+                                gradient: LinearGradient(colors: [Theme.of(context).primaryColor, Theme.of(context).primaryColor.withOpacity(0.8)]),
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
-                                  BoxShadow(color: const Color(0xFF6AA9D8).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
+                                  BoxShadow(color: Theme.of(context).primaryColor.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
                                 ],
                               ),
                               child: const Row(
@@ -496,23 +496,32 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
     );
   }
 
-  Widget _buildReviewSuccess() {
+  Widget _buildReviewSuccess(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.green.shade50,
+            color: Colors.green.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(Icons.check_circle, color: Colors.green.shade400, size: 40),
         ),
         const SizedBox(height: 14),
-        const Text('Review Submitted!', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF1A1D26))),
+        Text(
+          'Review Submitted!', 
+          style: TextStyle(
+            fontWeight: FontWeight.w700, 
+            fontSize: 18, 
+            color: Theme.of(context).textTheme.titleLarge?.color
+          )
+        ),
         const SizedBox(height: 6),
         Text(
           'Thank you for rating $_doctorName',
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+          style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 10),
@@ -531,19 +540,29 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen>
   }
 
   Widget _statCard(String label, String value, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 3))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.03), blurRadius: 10, offset: const Offset(0, 3))],
+          border: isDark ? Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)) : null,
         ),
         child: Column(
           children: [
-            Icon(icon, color: const Color(0xFF6AA9D8), size: 22),
+            Icon(icon, color: Theme.of(context).primaryColor, size: 22),
             const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF1A1D26))),
+            Text(
+              value, 
+              style: TextStyle(
+                fontWeight: FontWeight.w700, 
+                fontSize: 15, 
+                color: Theme.of(context).textTheme.bodyLarge?.color
+              )
+            ),
             const SizedBox(height: 4),
             Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
           ],

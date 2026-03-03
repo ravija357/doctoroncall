@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_bloc.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_event.dart';
 import 'package:intl/intl.dart';
 
-class PendingRequestsScreen extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:doctoroncall/features/appointments/presentation/providers/appointment_provider.dart';
+import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
+
+class PendingRequestsScreen extends ConsumerWidget {
   const PendingRequestsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -37,7 +37,10 @@ class PendingRequestsScreen extends StatelessWidget {
                           color: Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.chevron_left, color: Colors.white),
+                        child: const Icon(
+                          Icons.chevron_left,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -55,37 +58,46 @@ class PendingRequestsScreen extends StatelessWidget {
 
               // Request List
               Expanded(
-                child: BlocBuilder<AppointmentBloc, AppointmentState>(
-                  builder: (context, state) {
-                    if (state is AppointmentLoading) {
-                      return const Center(child: CircularProgressIndicator(color: Color(0xFF4889A8)));
-                    }
-                    if (state is DoctorAppointmentsLoaded) {
-                      final pending = state.appointments
-                          .where((a) => a.status.toLowerCase() == 'pending')
-                          .toList()
-                        ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+                child: () {
+                  final state = ref.watch(appointmentNotifierProvider);
+                  if (state is AppointmentLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF4889A8),
+                      ),
+                    );
+                  }
+                  if (state is DoctorAppointmentsLoaded) {
+                    final pending =
+                        state.appointments
+                            .where((a) => a.status.toLowerCase() == 'pending')
+                            .toList()
+                          ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
 
-                      if (pending.isEmpty) {
-                        return _buildEmptyState();
-                      }
+                    if (pending.isEmpty) {
+                      return _buildEmptyState();
+                    }
 
-                      return ListView.separated(
-                        padding: const EdgeInsets.all(20),
-                        itemCount: pending.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 16),
-                        itemBuilder: (context, index) {
-                          final ap = pending[index];
-                          return _PendingCard(ap: ap);
-                        },
-                      );
-                    }
-                    if (state is AppointmentError) {
-                      return Center(child: Text(state.message, style: const TextStyle(color: Colors.red)));
-                    }
-                    return _buildEmptyState();
-                  },
-                ),
+                    return ListView.separated(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: pending.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final ap = pending[index];
+                        return _PendingCard(ap: ap);
+                      },
+                    );
+                  }
+                  if (state is AppointmentError) {
+                    return Center(
+                      child: Text(
+                        state.message,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    );
+                  }
+                  return _buildEmptyState();
+                }(),
               ),
             ],
           ),
@@ -110,10 +122,7 @@ class PendingRequestsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'All caught up!',
-            style: TextStyle(color: Colors.grey.shade400),
-          ),
+          Text('All caught up!', style: TextStyle(color: Colors.grey.shade400)),
         ],
       ),
     );
@@ -129,7 +138,7 @@ class _PendingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final formattedDate = DateFormat('EEEE, MMM d').format(ap.dateTime);
     final formattedTime = DateFormat('h:mm a').format(ap.dateTime);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -151,7 +160,11 @@ class _PendingCard extends StatelessWidget {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: const Color(0xFF6AA9D8).withOpacity(0.1),
-                child: const Icon(Icons.person, color: Color(0xFF4889A8), size: 28),
+                child: const Icon(
+                  Icons.person,
+                  color: Color(0xFF4889A8),
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -168,7 +181,10 @@ class _PendingCard extends StatelessWidget {
                     ),
                     Text(
                       ap.reason ?? 'General Consultation',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -197,45 +213,53 @@ class _PendingCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    context.read<AppointmentBloc>().add(
-                      UpdateAppointmentStatusRequested(
-                        appointmentId: ap.id!,
-                        status: 'cancelled',
+                child: Consumer(
+                  builder: (context, ref, child) => ElevatedButton(
+                    onPressed: () {
+                      ref
+                          .read(appointmentNotifierProvider.notifier)
+                          .updateAppointmentStatus(ap.id!, 'cancelled');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade50,
+                      foregroundColor: Colors.red,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade50,
-                    foregroundColor: Colors.red,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text(
+                      'Decline',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    context.read<AppointmentBloc>().add(
-                      UpdateAppointmentStatusRequested(
-                        appointmentId: ap.id!,
-                        status: 'confirmed',
+                child: Consumer(
+                  builder: (context, ref, child) => ElevatedButton(
+                    onPressed: () {
+                      ref
+                          .read(appointmentNotifierProvider.notifier)
+                          .updateAppointmentStatus(ap.id!, 'confirmed');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4889A8),
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shadowColor: const Color(0xFF4889A8).withOpacity(0.3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4889A8),
-                    foregroundColor: Colors.white,
-                    elevation: 4,
-                    shadowColor: const Color(0xFF4889A8).withOpacity(0.3),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text(
+                      'Accept',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  child: const Text('Accept', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -274,7 +298,11 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(color: iconColor.withOpacity(0.8), fontSize: 11, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: iconColor.withOpacity(0.8),
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),

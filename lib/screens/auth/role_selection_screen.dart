@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:doctoroncall/screens/auth/splash_screen.dart';
 
-
-class RoleSelectionScreen extends StatelessWidget {
+class RoleSelectionScreen extends ConsumerWidget {
   const RoleSelectionScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final size = MediaQuery.of(context).size;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF6AA9D8), // same blue as buttons
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFF6AA9D8),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -28,6 +30,8 @@ class RoleSelectionScreen extends StatelessWidget {
                 child: Image.asset(
                   'assets/images/doctoroncall_logo.png',
                   fit: BoxFit.contain,
+                  color: isDark ? Colors.white.withOpacity(0.9) : null,
+                  colorBlendMode: isDark ? BlendMode.modulate : null,
                 ),
               ),
             ),
@@ -56,8 +60,8 @@ class RoleSelectionScreen extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF6AA9D8),
+                  backgroundColor: isDark ? Theme.of(context).cardColor : Colors.white,
+                  foregroundColor: isDark ? Colors.white : const Color(0xFF6AA9D8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
@@ -83,8 +87,8 @@ class RoleSelectionScreen extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF6AA9D8),
+                  backgroundColor: isDark ? Theme.of(context).cardColor : Colors.white,
+                  foregroundColor: isDark ? Colors.white : const Color(0xFF6AA9D8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),

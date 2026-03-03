@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_bloc.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_event.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
 import 'package:doctoroncall/features/doctors/domain/entities/doctor.dart';
 import 'package:doctoroncall/screens/patient/esewa_payment_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:doctoroncall/core/utils/image_utils.dart';
 
-class BookAppointmentScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:doctoroncall/features/appointments/presentation/providers/appointment_provider.dart';
+import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
+
+class BookAppointmentScreen extends ConsumerStatefulWidget {
   final Doctor? doctor;
   const BookAppointmentScreen({super.key, this.doctor});
 
   @override
-  State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
+  ConsumerState<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
 }
 
-class _BookAppointmentScreenState extends State<BookAppointmentScreen>
+class _BookAppointmentScreenState extends ConsumerState<BookAppointmentScreen>
     with SingleTickerProviderStateMixin {
   DateTime _focusedMonth = DateTime.now();
   DateTime _selectedDate = DateTime.now();
@@ -33,7 +33,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
     _selectedDate = DateTime.now();
-    _loadAvailability();
+    Future.microtask(() => _loadAvailability());
   }
 
   @override
@@ -48,10 +48,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
       _selectedSlotIndex = -1;
       _loadingSlots = true;
     });
-    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
-    context.read<AppointmentBloc>().add(
-      LoadAvailabilityRequested(doctorId: widget.doctor!.id, date: dateStr),
-    );
+    ref.read(appointmentNotifierProvider.notifier).loadAvailability(widget.doctor!.id, _selectedDate);
   }
 
   void _goToPreviousMonth() {
@@ -81,25 +78,21 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
           content: const Text('Please select a time slot', style: TextStyle(fontWeight: FontWeight.w500)),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          backgroundColor: const Color(0xFF344955),
+          backgroundColor: Theme.of(context).primaryColor,
         ),
       );
       return;
     }
 
     final slot = _slots[_selectedSlotIndex];
-    final appointmentBloc = context.read<AppointmentBloc>();
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: appointmentBloc,
-          child: EsewaPaymentScreen(
-            doctor: widget.doctor!,
-            selectedDate: _selectedDate,
-            startTime: slot['startTime'] as String,
-            endTime: slot['endTime'] as String,
-          ),
+        builder: (_) => EsewaPaymentScreen(
+          doctor: widget.doctor!,
+          selectedDate: _selectedDate,
+          startTime: slot['startTime'] as String,
+          endTime: slot['endTime'] as String,
         ),
       ),
     );
@@ -107,49 +100,51 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    ref.listen<AppointmentState>(appointmentNotifierProvider, (previous, next) {
+      if (next is AvailabilityLoaded) {
+        setState(() {
+          _slots = next.slots.isNotEmpty ? next.slots : _generateDefaultSlots();
+          _loadingSlots = false;
+        });
+      } else if (next is AppointmentError) {
+        setState(() {
+          _slots = _generateDefaultSlots();
+          _loadingSlots = false;
+        });
+      }
+    });
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
-      body: BlocListener<AppointmentBloc, AppointmentState>(
-        listener: (context, state) {
-          if (state is AvailabilityLoaded) {
-            setState(() {
-              _slots = state.slots.isNotEmpty ? state.slots : _generateDefaultSlots();
-              _loadingSlots = false;
-            });
-          } else if (state is AppointmentError) {
-            setState(() {
-              _slots = _generateDefaultSlots();
-              _loadingSlots = false;
-            });
-          }
-        },
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: CustomScrollView(
-            slivers: [
-              // Premium App Bar
-              SliverAppBar(
-                pinned: true,
-                backgroundColor: Colors.white,
-                elevation: 0,
-                leading: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0F4F8),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF344955), size: 18),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: CustomScrollView(
+          slivers: [
+            // Premium App Bar
+            SliverAppBar(
+              pinned: true,
+              backgroundColor: theme.scaffoldBackgroundColor,
+              elevation: 0,
+              leading: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  margin: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
                   ),
+                  child: Icon(Icons.arrow_back_ios_new, color: theme.iconTheme.color, size: 18),
                 ),
+              ),
                 centerTitle: true,
-                title: const Text(
+                title: Text(
                   'Make An Appointment',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 19,
-                    color: Color(0xFF1A1D26),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -159,7 +154,11 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
                     height: 1,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.transparent, Colors.grey.shade200, Colors.transparent],
+                        colors: [
+                          Colors.transparent, 
+                          isDark ? theme.dividerColor.withOpacity(0.1) : Colors.grey.shade200, 
+                          Colors.transparent
+                        ],
                       ),
                     ),
                   ),
@@ -174,12 +173,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
                     children: [
                       // Doctor info bar
                       if (widget.doctor != null) ...[
-                        _buildDoctorInfoBar(),
+                        _buildDoctorInfoBar(theme, isDark),
                         const SizedBox(height: 24),
                       ],
 
                       // Calendar card
-                      _buildCalendarCard(),
+                      _buildCalendarCard(theme, isDark),
                       const SizedBox(height: 28),
 
                       // Time Slots section
@@ -189,24 +188,22 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
                             width: 4,
                             height: 22,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF6AA9D8),
+                              color: theme.primaryColor,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const Text(
+                          Text(
                             'Available Time Slots',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1D26),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
                               letterSpacing: -0.3,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
-                      _buildTimeSlots(),
+                      _buildTimeSlots(theme, isDark),
                       const SizedBox(height: 36),
 
                       // eSewa pay button
@@ -219,24 +216,20 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
             ],
           ),
         ),
-      ),
     );
   }
 
-  Widget _buildDoctorInfoBar() {
+  Widget _buildDoctorInfoBar(ThemeData theme, bool isDark) {
     final doctor = widget.doctor!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6AA9D8), Color(0xFF4A8FBF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isDark ? theme.cardColor : theme.primaryColor.withOpacity(0.9),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF6AA9D8).withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
+          if (!isDark) BoxShadow(color: theme.primaryColor.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
         ],
+        border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
       ),
       child: Row(
         children: [
@@ -244,14 +237,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
+              color: isDark ? theme.scaffoldBackgroundColor : Colors.white.withOpacity(0.25),
               borderRadius: BorderRadius.circular(14),
               image: doctor.image != null
                   ? DecorationImage(image: ImageUtils.getImageProvider(doctor.image)!, fit: BoxFit.cover)
                   : null,
             ),
             child: doctor.image == null
-                ? const Icon(Icons.person, color: Colors.white, size: 28)
+                ? Icon(Icons.person, color: isDark ? Colors.grey.shade700 : Colors.white, size: 28)
                 : null,
           ),
           const SizedBox(width: 14),
@@ -261,12 +254,19 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
               children: [
                 Text(
                   'Dr. ${doctor.firstName} ${doctor.lastName}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 16, 
+                    fontWeight: FontWeight.w700, 
+                    color: isDark ? theme.textTheme.titleMedium?.color : Colors.white
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   '${doctor.specialization} • ${doctor.experience} yrs exp',
-                  style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.85)),
+                  style: TextStyle(
+                    fontSize: 13, 
+                    color: isDark ? Colors.grey.shade400 : Colors.white.withOpacity(0.85)
+                  ),
                 ),
               ],
             ),
@@ -274,13 +274,17 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: isDark ? theme.scaffoldBackgroundColor : Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
+              border: Border.all(color: isDark ? theme.dividerColor.withOpacity(0.1) : Colors.white.withOpacity(0.3)),
             ),
             child: Text(
               'NPR ${doctor.fees.toStringAsFixed(0)}',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+              style: TextStyle(
+                color: isDark ? theme.primaryColor : Colors.white, 
+                fontWeight: FontWeight.w700, 
+                fontSize: 13
+              ),
             ),
           ),
         ],
@@ -288,16 +292,17 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
     );
   }
 
-  Widget _buildCalendarCard() {
+  Widget _buildCalendarCard(ThemeData theme, bool isDark) {
     final monthYear = DateFormat('MMMM yyyy').format(_focusedMonth);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 6)),
+          if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 6)),
         ],
+        border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
       ),
       child: Column(
         children: [
@@ -310,18 +315,17 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4F8),
+                    color: theme.scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(10),
+                    border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
                   ),
-                  child: const Icon(Icons.chevron_left, color: Color(0xFF344955), size: 22),
+                  child: Icon(Icons.chevron_left, color: theme.iconTheme.color, size: 22),
                 ),
               ),
               Text(
                 monthYear,
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1D26),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                   letterSpacing: -0.2,
                 ),
               ),
@@ -330,26 +334,27 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4F8),
+                    color: theme.scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(10),
+                    border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
                   ),
-                  child: const Icon(Icons.chevron_right, color: Color(0xFF344955), size: 22),
+                  child: Icon(Icons.chevron_right, color: theme.iconTheme.color, size: 22),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
           // Day labels
-          _buildDayLabels(),
+          _buildDayLabels(isDark),
           const SizedBox(height: 8),
           // Day grid
-          _buildDayGrid(),
+          _buildDayGrid(theme, isDark),
         ],
       ),
     );
   }
 
-  Widget _buildDayLabels() {
+  Widget _buildDayLabels(bool isDark) {
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -360,7 +365,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
             d,
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade500,
+              color: isDark ? Colors.grey.shade600 : Colors.grey.shade500,
               fontSize: 12,
               letterSpacing: 0.3,
             ),
@@ -370,7 +375,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
     );
   }
 
-  Widget _buildDayGrid() {
+  Widget _buildDayGrid(ThemeData theme, bool isDark) {
     final year = _focusedMonth.year;
     final month = _focusedMonth.month;
     final firstDay = DateTime(year, month, 1);
@@ -402,13 +407,13 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
                   height: 40,
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFF6AA9D8)
+                        ? theme.primaryColor
                         : isToday
-                            ? const Color(0xFFE8F2F8)
+                            ? theme.primaryColor.withOpacity(0.1)
                             : Colors.transparent,
                     shape: BoxShape.circle,
-                    boxShadow: isSelected
-                        ? [BoxShadow(color: const Color(0xFF6AA9D8).withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 3))]
+                    boxShadow: isSelected && !isDark
+                        ? [BoxShadow(color: theme.primaryColor.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 3))]
                         : [],
                   ),
                   child: Center(
@@ -418,12 +423,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
                         fontSize: 14,
                         fontWeight: isSelected || isToday ? FontWeight.w700 : FontWeight.w500,
                         color: isPast
-                            ? Colors.grey.shade300
+                            ? (isDark ? Colors.grey.shade800 : Colors.grey.shade300)
                             : isSelected
                                 ? Colors.white
                                 : isToday
-                                    ? const Color(0xFF6AA9D8)
-                                    : const Color(0xFF344955),
+                                    ? theme.primaryColor
+                                    : (isDark ? Colors.grey.shade400 : theme.primaryColor),
                       ),
                     ),
                   ),
@@ -436,12 +441,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
     );
   }
 
-  Widget _buildTimeSlots() {
+  Widget _buildTimeSlots(ThemeData theme, bool isDark) {
     if (_loadingSlots) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(color: Color(0xFF6AA9D8), strokeWidth: 2.5),
+          padding: const EdgeInsets.all(32),
+          child: CircularProgressIndicator(color: theme.primaryColor, strokeWidth: 2.5),
         ),
       );
     }
@@ -449,18 +454,19 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
     if (_slots.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(32),
+        width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.grey.shade100),
+          border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
         ),
         child: Column(
           children: [
-            Icon(Icons.event_busy, size: 44, color: Colors.grey.shade400),
+            Icon(Icons.event_busy, size: 44, color: isDark ? Colors.grey.shade700 : Colors.grey.shade400),
             const SizedBox(height: 12),
             Text(
               'No slots for this date',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 14, fontWeight: FontWeight.w500),
+              style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade500, fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -485,31 +491,31 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
               color: isBooked
-                  ? const Color(0xFFF0F0F0)
+                  ? (isDark ? Colors.grey.shade900 : theme.scaffoldBackgroundColor)
                   : isSelected
-                      ? const Color(0xFF6AA9D8)
-                      : Colors.white,
+                      ? theme.primaryColor
+                      : theme.cardColor,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isBooked
-                    ? Colors.grey.shade200
+                    ? (isDark ? Colors.grey.shade800 : Colors.grey.shade200)
                     : isSelected
-                        ? const Color(0xFF6AA9D8)
-                        : const Color(0xFFDDE3E8),
+                        ? theme.primaryColor
+                        : theme.dividerColor.withOpacity(0.2),
                 width: 1.5,
               ),
-              boxShadow: isSelected
-                  ? [BoxShadow(color: const Color(0xFF6AA9D8).withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4))]
-                  : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2))],
+              boxShadow: isSelected && !isDark
+                  ? [BoxShadow(color: theme.primaryColor.withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4))]
+                  : [if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2))],
             ),
             child: Text(
               label,
               style: TextStyle(
                 color: isBooked
-                    ? Colors.grey.shade400
+                    ? (isDark ? Colors.grey.shade700 : Colors.grey.shade400)
                     : isSelected
                         ? Colors.white
-                        : const Color(0xFF344955),
+                        : (isDark ? Colors.grey.shade300 : theme.primaryColor),
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 fontSize: 12,
                 letterSpacing: 0.2,
@@ -529,12 +535,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF60BB46), Color(0xFF4DA336)],
-          ),
+          color: Theme.of(context).primaryColor,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
-            BoxShadow(color: const Color(0xFF60BB46).withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6)),
+            BoxShadow(color: Theme.of(context).primaryColor.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6)),
           ],
         ),
         child: Row(
@@ -545,11 +549,11 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen>
                 children: [
                   TextSpan(
                     text: 'e',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, fontStyle: FontStyle.italic),
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.green, fontStyle: FontStyle.italic),
                   ),
                   TextSpan(
                     text: 'Sewa',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.green),
                   ),
                 ],
               ),

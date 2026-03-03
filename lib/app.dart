@@ -6,65 +6,110 @@ import 'package:doctoroncall/screens/auth/role_selection_screen.dart';
 import 'package:doctoroncall/screens/patient/patient_main_screen.dart';
 import 'package:doctoroncall/screens/doctor/doctor_main_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:doctoroncall/core/theme/theme_service.dart';
+import 'package:doctoroncall/features/auth/data/models/user_model.dart';
+import 'package:doctoroncall/core/constants/hive_boxes.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:doctoroncall/theme_data/theme_data.dart';
-import 'package:doctoroncall/features/auth/presentation/bloc/auth_state.dart';
-import 'package:doctoroncall/features/auth/presentation/bloc/auth_event.dart';
-
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:doctoroncall/features/auth/presentation/providers/auth_provider.dart';
+import 'package:doctoroncall/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:doctoroncall/core/di/injection_container.dart';
-import 'package:doctoroncall/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:doctoroncall/features/messages/presentation/bloc/chat_bloc.dart';
-import 'package:doctoroncall/features/messages/presentation/bloc/chat_state.dart';
-import 'package:doctoroncall/features/messages/presentation/bloc/chat_event.dart';
-import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_bloc.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_bloc.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_event.dart';
-import 'package:doctoroncall/features/notifications/presentation/bloc/notification_bloc.dart';
-import 'package:doctoroncall/features/notifications/presentation/bloc/notification_event.dart';
-import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_event.dart';
+import 'package:doctoroncall/features/auth/presentation/bloc/auth_state.dart';
+import 'package:doctoroncall/core/providers/lock_provider.dart';
+import 'package:doctoroncall/screens/shared/app_lock_screen.dart';
 
-class App extends StatelessWidget {
+class App extends ConsumerWidget {
   const App({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<AuthBloc>(create: (_) => sl<AuthBloc>()..add(CheckAuthStatus())),
-        BlocProvider<ChatBloc>(create: (_) => sl<ChatBloc>()),
-        BlocProvider<DoctorBloc>(create: (_) => sl<DoctorBloc>()),
-        BlocProvider<AppointmentBloc>(create: (_) => sl<AppointmentBloc>()),
-        BlocProvider<NotificationBloc>(create: (_) => sl<NotificationBloc>()),
-      ],
-      child: MaterialApp(
-        title: 'doctoroncall',
-        debugShowCheckedModeBanner: false,
-        theme: getApplicationTheme(),
-        home: const _IncomingCallWrapper(),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeService().themeMode,
+      builder: (context, mode, child) {
+        return MaterialApp(
+          title: 'doctoroncall',
+          debugShowCheckedModeBanner: false,
+          theme: getApplicationTheme(),
+          darkTheme: getApplicationTheme(isDark: true),
+          themeMode: mode,
+          home: const _IncomingCallWrapper(),
+        );
+      },
     );
   }
 }
 
 /// Wraps the main content and listens for incoming call events globally.
-class _IncomingCallWrapper extends StatefulWidget {
+class _IncomingCallWrapper extends ConsumerStatefulWidget {
   const _IncomingCallWrapper();
 
   @override
-  State<_IncomingCallWrapper> createState() => _IncomingCallWrapperState();
+  ConsumerState<_IncomingCallWrapper> createState() =>
+      _IncomingCallWrapperState();
 }
 
-class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
+class _IncomingCallWrapperState extends ConsumerState<_IncomingCallWrapper>
+    with WidgetsBindingObserver {
   StreamSubscription? _incomingCallSub;
   StreamSubscription? _messageSub;
+  StreamSubscription? _profileSyncSub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Trigger initial auth check
+    Future.microtask(() => ref.read(authProvider.notifier).checkAuthStatus());
+
     // Start listening for signals once socket may connect
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _listenForIncomingCalls();
       _listenForMessages();
+      _listenForProfileSync();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Re-lock the app if biometric is enabled
+      ref.read(lockProvider.notifier).lock();
+    }
+  }
+
+  void _listenForProfileSync() {
+    final dataSource = sl<ChatRemoteDataSource>();
+    _profileSyncSub = dataSource.doctorSyncStream.listen((data) async {
+      if (!mounted) return;
+      print('[SYNC] Profile sync data received in App: $data');
+
+      final box = Hive.box(HiveBoxes.users);
+      final currentUser = box.get('currentUser');
+
+      if (currentUser is Map) {
+        // Update Hive
+        final updatedUserMap = Map<String, dynamic>.from(currentUser);
+        if (data is Map) {
+          data.forEach((key, value) {
+            if (key == 'image') {
+              updatedUserMap['profileImage'] = value;
+            } else {
+              updatedUserMap[key] = value;
+            }
+          });
+          await box.put('currentUser', updatedUserMap);
+
+          // Trigger theme update if preferences changed
+          if (data.containsKey('preferences')) {
+            final prefs = data['preferences'] as Map?;
+            if (prefs != null) {
+              final isDark = prefs['darkMode'] as bool? ?? false;
+              await ThemeService().updateTheme(isDark);
+            }
+          }
+        }
+      }
     });
   }
 
@@ -74,7 +119,8 @@ class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
       if (!mounted) return;
       // Get local user id for answering
       final apiClient = sl<ApiClient>();
-      final localUserId = await apiClient.secureStorage.read(key: 'user_id') ?? '';
+      final localUserId =
+          await apiClient.secureStorage.read(key: 'user_id') ?? '';
 
       if (!mounted) return;
       final signal = data['signal'] as Map<String, dynamic>?;
@@ -108,25 +154,19 @@ class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
     _messageSub = dataSource.messageStream.listen((message) {
       if (!mounted) return;
 
-      final chatBloc = context.read<ChatBloc>();
-      final currentState = chatBloc.state;
+      // TODO: Migrate ChatBloc to ChatProvider and use ref here
+      // final chatBloc = context.read<ChatBloc>();
+      // final currentState = chatBloc.state;
+      // ...
 
-      // If we are in the chat screen with this person, don't show a popup
-      if (currentState is MessagesLoaded && currentState.activeChatUserId == message.senderId) {
-        return;
-      }
-
-      // Avoid showing popup for our own sent messages (confirmation pings)
-      final authBloc = context.read<AuthBloc>();
-      if (authBloc.state is AuthAuthenticated) {
-        final currentUser = (authBloc.state as AuthAuthenticated).user;
-        if (message.senderId == currentUser.id) return;
+      final authState = ref.read(authProvider);
+      if (authState is AuthAuthenticated) {
+        if (message.senderId == authState.user.id) return;
       }
 
       _showPremiumMessageToast(message.content);
     });
   }
-
 
   OverlayEntry? _toastEntry;
 
@@ -161,41 +201,47 @@ class _IncomingCallWrapperState extends State<_IncomingCallWrapper> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _incomingCallSub?.cancel();
     _messageSub?.cancel();
+    _profileSyncSub?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is AuthAuthenticated) {
-          // Connect socket globally on login
-          sl<ChatRemoteDataSource>().connectSocket();
-          // Load initial notifications 
-          context.read<NotificationBloc>().add(LoadNotificationsRequested());
-        } else if (state is AuthUnauthenticated) {
-          // Disconnect on logout
-          sl<ChatRemoteDataSource>().disconnectSocket();
-        }
-      },
-      child: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          if (state is AuthAuthenticated) {
-            return state.user.role.toUpperCase() == 'DOCTOR'
-                ? const DoctorMainScreen()
-                : const PatientMainScreen();
-          }
-          if (state is AuthLoading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator(color: Color(0xFF6AA9D8))),
-            );
-          }
-          return const RoleSelectionScreen();
-        },
-      ),
-    );
+    // Watch auth status to handle socket connection and navigation
+    final authState = ref.watch(authProvider);
+
+    // Global listener for socket connection
+    ref.listen(authProvider, (previous, next) {
+      if (next is AuthAuthenticated && (previous is! AuthAuthenticated)) {
+        sl<ChatRemoteDataSource>().connectSocket();
+        ref.read(notificationNotifierProvider.notifier).loadNotifications();
+      } else if (next is AuthUnauthenticated) {
+        sl<ChatRemoteDataSource>().disconnectSocket();
+      }
+    });
+
+    // Watch lock status
+    final lockState = ref.watch(lockProvider);
+    if (lockState.value == true) {
+      return const AppLockScreen();
+    }
+
+    if (authState is AuthAuthenticated) {
+      return authState.user.role.toUpperCase() == 'DOCTOR'
+          ? const DoctorMainScreen()
+          : const PatientMainScreen();
+    }
+    if (authState is AuthLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF6AA9D8)),
+        ),
+      );
+    }
+    return const RoleSelectionScreen();
   }
 }
 
@@ -262,7 +308,10 @@ class _PremiumMessageToastState extends State<_PremiumMessageToast>
             child: GestureDetector(
               onTap: _dismiss,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF32789D), Color(0xFF4889A8)],
@@ -337,7 +386,11 @@ class _PremiumMessageToastState extends State<_PremiumMessageToast>
                           color: Colors.white.withOpacity(0.15),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.close, color: Colors.white, size: 14),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
                     ),
                   ],

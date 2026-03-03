@@ -1,22 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:doctoroncall/features/appointments/presentation/providers/appointment_provider.dart';
 import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
 import 'package:intl/intl.dart';
 
-class MedicalRecordsScreen extends StatelessWidget {
+class MedicalRecordsScreen extends ConsumerWidget {
   const MedicalRecordsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF4889A8), Color(0xFFF8FAFC)],
-            stops: [0.0, 0.3],
+            colors: isDark 
+              ? [theme.scaffoldBackgroundColor, theme.scaffoldBackgroundColor]
+              : [theme.primaryColor, theme.scaffoldBackgroundColor],
+            stops: const [0.0, 0.3],
           ),
         ),
         child: SafeArea(
@@ -33,19 +39,19 @@ class MedicalRecordsScreen extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: isDark ? theme.cardColor : Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.chevron_left, color: Colors.white),
+                        child: Icon(Icons.chevron_left, color: isDark ? theme.iconTheme.color : Colors.white),
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
+                    Text(
                       'Medical Records',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDark ? theme.textTheme.titleLarge?.color : Colors.white,
                       ),
                     ),
                   ],
@@ -54,10 +60,10 @@ class MedicalRecordsScreen extends StatelessWidget {
 
               // Records List
               Expanded(
-                child: BlocBuilder<AppointmentBloc, AppointmentState>(
-                  builder: (context, state) {
-                    if (state is AppointmentLoading) {
-                      return const Center(child: CircularProgressIndicator(color: Color(0xFF4889A8)));
+                child: () {
+                  final state = ref.watch(appointmentNotifierProvider);
+                  if (state is AppointmentLoading) {
+                      return Center(child: CircularProgressIndicator(color: isDark ? theme.primaryColor : theme.primaryColor));
                     }
                     if (state is AppointmentsLoaded) {
                       final records = state.appointments
@@ -65,7 +71,7 @@ class MedicalRecordsScreen extends StatelessWidget {
                           .toList();
                       
                       if (records.isEmpty) {
-                        return _buildEmptyState();
+                        return _buildEmptyState(theme, isDark);
                       }
 
                       return ListView.separated(
@@ -78,9 +84,8 @@ class MedicalRecordsScreen extends StatelessWidget {
                         },
                       );
                     }
-                    return _buildEmptyState();
-                  },
-                ),
+                    return _buildEmptyState(theme, isDark);
+                  }(),
               ),
             ],
           ),
@@ -89,19 +94,18 @@ class MedicalRecordsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme, bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history_edu_rounded, size: 80, color: Colors.grey.shade300),
+          Icon(Icons.history_edu_rounded, size: 80, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
           const SizedBox(height: 16),
           Text(
             'No records found',
-            style: TextStyle(
-              fontSize: 18,
+            style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
             ),
           ),
           const SizedBox(height: 8),
@@ -110,7 +114,7 @@ class MedicalRecordsScreen extends StatelessWidget {
             child: Text(
               'Your completed visit summaries will appear here.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade400),
+              style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade400, fontSize: 13),
             ),
           ),
         ],
@@ -125,20 +129,23 @@ class _RecordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final dateStr = DateFormat('MMMM d, y').format(record.dateTime);
     
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(
+          if (!isDark) BoxShadow(
             color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
+        border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,10 +155,10 @@ class _RecordCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: theme.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(Icons.file_present_rounded, color: Colors.blue.shade600),
+                child: Icon(Icons.file_present_rounded, color: theme.primaryColor),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -160,15 +167,14 @@ class _RecordCard extends StatelessWidget {
                   children: [
                     Text(
                       'Visit Summary',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade800,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       'Dr. ${record.doctorName ?? "Specialist"}',
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                      style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade500, fontSize: 13),
                     ),
                   ],
                 ),
@@ -178,11 +184,15 @@ class _RecordCard extends StatelessWidget {
                 children: [
                   Text(
                     dateStr,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 13,
+                      color: theme.textTheme.bodyMedium?.color
+                    ),
                   ),
                   Text(
                     record.startTime ?? "",
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade400, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -193,9 +203,9 @@ class _RecordCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: isDark ? theme.scaffoldBackgroundColor : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade100),
+              border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,16 +214,16 @@ class _RecordCard extends StatelessWidget {
                   children: [
                     Icon(Icons.notes_rounded, size: 16, color: Colors.orange.shade400),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'Clinical Notes',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
                   record.notes ?? "Standard checkup completed. Patient is in good health.",
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.5),
+                  style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 13, height: 1.5),
                 ),
               ],
             ),
@@ -242,8 +252,8 @@ class _RecordCard extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                side: BorderSide(color: Colors.grey.shade200),
-                foregroundColor: Colors.grey.shade700,
+                side: BorderSide(color: theme.dividerColor.withOpacity(0.2)),
+                foregroundColor: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
               ),
             ),
           ),

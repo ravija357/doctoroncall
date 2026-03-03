@@ -1,30 +1,30 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:doctoroncall/screens/doctor/doctor_dashboard_screen.dart';
 import 'package:doctoroncall/screens/patient/appointment_list_screen.dart';
 import 'package:doctoroncall/screens/shared/message_list_screen.dart';
-import 'package:doctoroncall/features/messages/presentation/bloc/chat_bloc.dart';
+import 'package:doctoroncall/features/messages/presentation/providers/chat_provider.dart';
 import 'package:doctoroncall/features/messages/presentation/bloc/chat_state.dart';
-import 'package:doctoroncall/features/messages/presentation/bloc/chat_event.dart';
 
-class DoctorMainScreen extends StatefulWidget {
+class DoctorMainScreen extends ConsumerStatefulWidget {
   const DoctorMainScreen({super.key});
 
   @override
-  State<DoctorMainScreen> createState() => _DoctorMainScreenState();
+  ConsumerState<DoctorMainScreen> createState() => _DoctorMainScreenState();
 }
 
-class _DoctorMainScreenState extends State<DoctorMainScreen> {
+class _DoctorMainScreenState extends ConsumerState<DoctorMainScreen> {
   int _selectedIndex = 0;
   int _unreadMessageCount = 0;
 
   @override
   void initState() {
     super.initState();
-    // Connect socket & load contacts to populate unread badges
-    context.read<ChatBloc>().add(ConnectSocketRequested());
-    context.read<ChatBloc>().add(const LoadContactsRequested());
+    Future.microtask(() {
+      ref.read(chatNotifierProvider.notifier).connectSocket();
+      ref.read(chatNotifierProvider.notifier).loadContacts();
+    });
   }
 
   void _onItemTapped(int index) {
@@ -38,27 +38,37 @@ class _DoctorMainScreenState extends State<DoctorMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ChatBloc, ChatState>(
-      listener: (context, state) {
-        if (state is ContactsLoaded && _selectedIndex != 2) {
-          final totalUnread = state.contacts.fold<int>(0, (sum, c) => sum + c.unread);
-          if (totalUnread != _unreadMessageCount) {
-            setState(() => _unreadMessageCount = totalUnread);
-          }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    ref.listen<ChatState>(chatNotifierProvider, (previous, next) {
+      if (next is ContactsLoaded && _selectedIndex != 2) {
+        final totalUnread = next.contacts.fold<int>(
+          0,
+          (sum, c) => sum + c.unread,
+        );
+        if (totalUnread != _unreadMessageCount) {
+          setState(() => _unreadMessageCount = totalUnread);
         }
-      },
-      child: Scaffold(
+      }
+    });
+
+    return Scaffold(
         extendBody: true,
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF4889A8),
-                Color(0xFFF8FAFC),
-              ],
-              stops: [0.0, 0.4],
+              colors: isDark
+                  ? [
+                      const Color(0xFF1A237E).withOpacity(0.6),
+                      Theme.of(context).scaffoldBackgroundColor,
+                    ]
+                  : [
+                      const Color(0xFF4889A8).withOpacity(0.8),
+                      const Color(0xFFF8FAFC),
+                    ],
+              stops: const [0.0, 0.4],
             ),
           ),
           child: SafeArea(
@@ -67,10 +77,13 @@ class _DoctorMainScreenState extends State<DoctorMainScreen> {
               children: [
                 IndexedStack(
                   index: _selectedIndex,
-                  children: const [
-                    DoctorDashboardScreen(),
-                    AppointmentListScreen(isFromBottomNav: true),
-                    MessageListScreen(),
+                  children: [
+                    const DoctorDashboardScreen(),
+                    AppointmentListScreen(
+                      isFromBottomNav: true,
+                      onBackPressed: () => _onItemTapped(0),
+                    ),
+                    MessageListScreen(onBackPressed: () => _onItemTapped(0)),
                   ],
                 ),
                 // Floating Premium Bottom Navigation Bar
@@ -85,15 +98,21 @@ class _DoctorMainScreenState extends State<DoctorMainScreen> {
                       child: Container(
                         height: 70,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.8),
+                          color: isDark
+                              ? Theme.of(context).cardColor.withOpacity(0.9)
+                              : Colors.white.withOpacity(0.85),
                           borderRadius: BorderRadius.circular(30),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
+                            color: isDark
+                                ? Colors.white.withOpacity(0.08)
+                                : Colors.white.withOpacity(0.3),
                             width: 1.5,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withOpacity(
+                                isDark ? 0.3 : 0.08,
+                              ),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -137,8 +156,7 @@ class _DoctorMainScreenState extends State<DoctorMainScreen> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -162,8 +180,8 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isActive = selectedIndex == index;
-    final primaryColor = const Color(0xFF4889A8);
-    
+    final primaryColor = Theme.of(context).primaryColor;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -176,14 +194,23 @@ class _NavItem extends StatelessWidget {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
-                  color: isActive ? primaryColor.withOpacity(0.1) : Colors.transparent,
+                  color: isActive
+                      ? primaryColor.withOpacity(0.1)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Icon(
                   isActive ? activeIcon : icon,
-                  color: isActive ? primaryColor : Colors.grey.shade500,
+                  color: isActive
+                      ? primaryColor
+                      : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey.shade600
+                            : Colors.grey.shade400),
                   size: 26,
                 ),
               ),
@@ -200,16 +227,22 @@ class _NavItem extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF3B30),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(
+                          color: Theme.of(context).cardColor,
+                          width: 1.5,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.red.withOpacity(0.4),
+                            color: Colors.red.withOpacity(0.2),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
-                          )
+                          ),
                         ],
                       ),
-                      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
                       child: Center(
                         child: Text(
                           badgeCount > 99 ? '99+' : badgeCount.toString(),

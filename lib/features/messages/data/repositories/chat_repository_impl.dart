@@ -116,5 +116,8 @@ class ChatRepositoryImpl implements ChatRepository {
   Stream<dynamic> notificationSyncStream() => remoteDataSource.notificationSyncStream;
 
   @override
+  Stream<dynamic> reviewSyncStream() => remoteDataSource.reviewSyncStream;
+
+  @override
   Future<void> markAsRead(String senderId) => remoteDataSource.markAsRead(senderId);
 }

@@ -1,211 +1,558 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:doctoroncall/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:doctoroncall/features/auth/presentation/bloc/auth_event.dart';
+import 'package:doctoroncall/features/auth/presentation/providers/auth_provider.dart';
 import 'package:doctoroncall/core/utils/image_utils.dart';
 import 'package:doctoroncall/screens/auth/splash_screen.dart';
-
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:doctoroncall/screens/shared/image_upload_screen.dart';
+import 'package:doctoroncall/core/theme/theme_service.dart';
+import 'package:doctoroncall/core/di/injection_container.dart';
+import 'package:doctoroncall/core/network/api_client.dart';
+import 'package:dio/dio.dart';
+import 'package:doctoroncall/core/providers/lock_provider.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _bioController = TextEditingController();
+
+  bool _isSaving = false;
+  bool _isDarkMode = ThemeService().isDarkMode;
+  bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  void _loadUserData() {
+    final box = Hive.box(HiveBoxes.users);
+    final userData = box.get('currentUser');
+    if (userData is Map) {
+      _firstNameController.text = userData['firstName'] ?? '';
+      _lastNameController.text = userData['lastName'] ?? '';
+      _phoneController.text = userData['phone'] ?? '';
+      _addressController.text = userData['address'] ?? '';
+      _bioController.text = userData['bio'] ?? '';
+
+      final prefs = userData['preferences'] as Map?;
+      if (prefs != null) {
+        _isDarkMode = prefs['darkMode'] as bool? ?? false;
+        _notificationsEnabled = prefs['notifications'] as bool? ?? true;
+      }
+    }
+  }
+
+  Future<void> _syncTheme(bool val) async {
+    try {
+      final box = Hive.box(HiveBoxes.users);
+      final userData = box.get('currentUser');
+      if (userData is! Map) return;
+
+      final userId = userData['id'] ?? userData['_id'];
+      final apiClient = sl<ApiClient>();
+
+      await apiClient.dio.put(
+        '/auth/$userId',
+        data: {
+          'preferences': {
+            'darkMode': val,
+            'notifications': _notificationsEnabled,
+          },
+        },
+      );
+    } catch (e) {
+      print('[SYNC] Theme sync error: $e');
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    setState(() => _isSaving = true);
+    try {
+      final box = Hive.box(HiveBoxes.users);
+      final userData = box.get('currentUser');
+      if (userData is! Map) return;
+
+      final userId = userData['id'] ?? userData['_id'];
+      final apiClient = sl<ApiClient>();
+
+      final preferences = {
+        'darkMode': _isDarkMode,
+        'notifications': _notificationsEnabled,
+        'newsletter': false,
+      };
+
+      final data = {
+        'firstName': _firstNameController.text,
+        'lastName': _lastNameController.text,
+        'phone': _phoneController.text,
+        'address': _addressController.text,
+        'bio': _bioController.text,
+        'preferences': preferences,
+      };
+
+      final response = await apiClient.dio.put('/auth/$userId', data: data);
+
+      if (response.statusCode == 200) {
+        // Sync local Hive
+        final updatedUserMap = Map<String, dynamic>.from(userData);
+        data.forEach((key, value) => updatedUserMap[key] = value);
+        await box.put('currentUser', updatedUserMap);
+
+        // Update theme globally
+        ThemeService().updateTheme(_isDarkMode);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile updated successfully')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating profile: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final box = Hive.box(HiveBoxes.users);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Profile', style: TextStyle(fontFamily: 'PlayfairDisplay')),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text(
+          'My Profile',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
       ),
-      backgroundColor: Colors.white,
       body: ValueListenableBuilder(
         valueListenable: box.listenable(),
         builder: (context, Box box, _) {
-          // Read from the cached UserModel map
           final userData = box.get('currentUser');
-          final String firstName;
-          final String lastName;
-          final String email;
-          final String? imageUrl;
-
-          if (userData is Map) {
-            firstName = userData['firstName'] ?? 'User';
-            lastName = userData['lastName'] ?? '';
-            email = userData['email'] ?? 'No email provided';
-            imageUrl = userData['profileImage'];
-          } else {
-            // Fallback for legacy format
-            firstName = box.get('firstName') ?? 'User';
-            lastName = box.get('lastName') ?? '';
-            email = box.get('email') ?? 'No email provided';
-            imageUrl = box.get('profileImage');
-          }
+          final String? imageUrl = (userData is Map)
+              ? userData['profileImage']
+              : null;
+          final String role = (userData is Map)
+              ? userData['role'] ?? 'PATIENT'
+              : 'PATIENT';
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 10),
-                Stack(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF6AA9D8).withValues(alpha: 0.2), width: 4),
-                      ),
-                      child: CircleAvatar(
-                        radius: 65,
-                        backgroundColor: Colors.grey.shade100,
-                        backgroundImage: ImageUtils.getImageProvider(imageUrl),
-                        child: imageUrl == null
-                            ? const Icon(Icons.person, size: 70, color: Colors.grey)
-                            : null,
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ImageUploadScreen()),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF6AA9D8),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildHeader(imageUrl, role, isDark),
+                const SizedBox(height: 30),
+                _buildPersonalInfoSection(isDark),
                 const SizedBox(height: 20),
-                Text(
-                  '$firstName $lastName',
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  email,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
+                _buildPreferencesSection(isDark),
+                const SizedBox(height: 20),
+                _buildDangerZone(isDark),
                 const SizedBox(height: 40),
-
-                _buildSectionHeader('Account Settings'),
-                const SizedBox(height: 12),
-                _buildProfileItem(
-                  icon: Icons.person_outline,
-                  title: 'Personal Information',
-                  subtitle: 'Update your name and basic info',
-                ),
-                _buildProfileItem(
-                  icon: Icons.lock_outline,
-                  title: 'Security',
-                  subtitle: 'Change password or enable 2FA',
-                ),
-                _buildProfileItem(
-                  icon: Icons.notifications_none,
-                  title: 'Notifications',
-                  subtitle: 'Manage your alerts',
-                ),
-                const SizedBox(height: 32),
-
-                _buildSectionHeader('More'),
-                const SizedBox(height: 12),
-                _buildProfileItem(
-                  icon: Icons.help_outline,
-                  title: 'Help & Support',
-                  subtitle: 'Get assistance or contact us',
-                ),
-                _buildProfileItem(
-                  icon: Icons.logout,
-                  title: 'Logout',
-                  subtitle: 'Sign out of your account',
-                  isDestructive: true,
-                  onTap: () {
-                    context.read<AuthBloc>().add(LogoutRequested());
-                    // Pop all pushed routes so the root BlocBuilder shows RoleSelectionScreen
-                    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
-                  },
-                ),
               ],
             ),
           );
         },
       ),
+      bottomNavigationBar: _buildBottomAction(isDark),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey.shade800,
+  Widget _buildHeader(String? imageUrl, String role, bool isDark) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF6AA9D8),
+                    const Color(0xFF6AA9D8).withOpacity(0.5),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6AA9D8).withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+            ),
+            CircleAvatar(
+              radius: 65,
+              backgroundColor: Theme.of(context).cardColor,
+              backgroundImage: ImageUtils.getImageProvider(imageUrl),
+              child: imageUrl == null
+                  ? Icon(Icons.person, size: 70, color: Colors.grey.shade400)
+                  : null,
+            ),
+            Positioned(
+              bottom: 0,
+              right: 5,
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ImageUploadScreen(),
+                  ),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6AA9D8),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).cardColor,
+                      width: 3,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
+        const SizedBox(height: 15),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: role.toUpperCase() == 'DOCTOR'
+                ? Colors.blue.withOpacity(0.1)
+                : Colors.teal.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                role.toUpperCase() == 'DOCTOR'
+                    ? Icons.verified_user
+                    : Icons.person_pin,
+                size: 14,
+                color: role.toUpperCase() == 'DOCTOR'
+                    ? Colors.blue
+                    : Colors.teal,
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'ACCOUNT VERIFIED',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildProfileItem({
-    required IconData icon,
+  Widget _buildPersonalInfoSection(bool isDark) {
+    return _buildCard(
+      isDark,
+      title: 'Personal Information',
+      icon: Icons.person_outline_rounded,
+      children: [
+        _buildTextField(
+          'First Name',
+          _firstNameController,
+          Icons.person_outline,
+        ),
+        _buildTextField('Last Name', _lastNameController, Icons.person_outline),
+        _buildTextField(
+          'Phone Number',
+          _phoneController,
+          Icons.phone_android_rounded,
+          keyboardType: TextInputType.phone,
+        ),
+        _buildTextField('Address', _addressController, Icons.map_outlined),
+        _buildTextField(
+          'Bio',
+          _bioController,
+          Icons.description_outlined,
+          maxLines: 3,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPreferencesSection(bool isDark) {
+    return _buildCard(
+      isDark,
+      title: 'App Preferences',
+      icon: Icons.settings_outlined,
+      children: [
+        _buildToggleRow(
+          'Dark Mode',
+          'Optimize interface for low light',
+          Icons.dark_mode_outlined,
+          _isDarkMode,
+          (val) {
+            setState(() => _isDarkMode = val);
+            ThemeService().updateTheme(val);
+            _syncTheme(val);
+          },
+        ),
+        const Divider(height: 1, indent: 50),
+        _buildToggleRow(
+          'Push Notifications',
+          'Get alerts for messages & appointments',
+          Icons.notifications_none_rounded,
+          _notificationsEnabled,
+          (val) => setState(() => _notificationsEnabled = val),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDangerZone(bool isDark) {
+    return _buildCard(
+      isDark,
+      title: 'Account Security',
+      icon: Icons.security_rounded,
+      children: [
+        _buildToggleRow(
+          'Biometric Authentication',
+          'Secure app access with Fingerprint/FaceID',
+          Icons.fingerprint_rounded,
+          ref.watch(lockProvider.notifier).isBiometricEnabled,
+          (val) => ref.read(lockProvider.notifier).setBiometricEnabled(val),
+        ),
+        const Divider(height: 1, indent: 50),
+        _buildActionTile('Change Password', Icons.lock_outline_rounded, () {}),
+        _buildActionTile(
+          'Delete Account',
+          Icons.delete_outline_rounded,
+          () {},
+          isDestructive: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCard(
+    bool isDark, {
     required String title,
-    required String subtitle,
-    bool isDestructive = false,
-    VoidCallback? onTap,
+    required IconData icon,
+    required List<Widget> children,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.1),
+        ),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: isDestructive ? Colors.red.withValues(alpha: 0.1) : const Color(0xFF6AA9D8).withValues(alpha: 0.1),
-            shape: BoxShape.circle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 15),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 10),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Icon(icon, color: isDestructive ? Colors.red : const Color(0xFF6AA9D8)),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: isDestructive ? Colors.red : Colors.black87,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-        ),
-        trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
-        onTap: onTap,
+          ...children,
+          const SizedBox(height: 10),
+        ],
       ),
     );
+  }
+
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        style: const TextStyle(fontSize: 14),
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, size: 18),
+          filled: true,
+          fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleRow(
+    String title,
+    String subtitle,
+    IconData icon,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
+    return SwitchListTile.adaptive(
+      value: value,
+      onChanged: onChanged,
+      secondary: Icon(icon, color: Theme.of(context).primaryColor),
+      title: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
+      ),
+      activeColor: Theme.of(context).primaryColor,
+    );
+  }
+
+  Widget _buildActionTile(
+    String title,
+    IconData icon,
+    VoidCallback onTap, {
+    bool isDestructive = false,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isDestructive ? Colors.redAccent : Colors.grey,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isDestructive ? Colors.redAccent : null,
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right_rounded, size: 20),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildBottomAction(bool isDark) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        15,
+        20,
+        15 + MediaQuery.of(context).padding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextButton(
+              onPressed: () {
+                ref.read(authProvider.notifier).logout();
+                Navigator.of(
+                  context,
+                  rootNavigator: true,
+                ).popUntil((route) => route.isFirst);
+              },
+              child: const Text(
+                'Logout',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              onPressed: _isSaving ? null : _saveProfile,
+              style: ElevatedButton.styleFrom(minimumSize: const Size(0, 50)),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text('Save Changes'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _bioController.dispose();
+    super.dispose();
   }
 }

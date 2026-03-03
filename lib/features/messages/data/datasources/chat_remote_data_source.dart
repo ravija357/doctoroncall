@@ -27,6 +27,7 @@ abstract class ChatRemoteDataSource {
   Stream<dynamic> get notificationSyncStream;
   Stream<dynamic> get doctorSyncStream;
   Stream<dynamic> get scheduleSyncStream;
+  Stream<dynamic> get reviewSyncStream;
 
   /// Upload a file/image, returns the saved message JSON from the server
   Future<MessageModel> uploadFile({required String filePath, required String receiverId, required String type});
@@ -57,6 +58,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   final StreamController<dynamic> _notificationSyncController = StreamController<dynamic>.broadcast();
   final StreamController<dynamic> _doctorSyncController = StreamController<dynamic>.broadcast();
   final StreamController<dynamic> _scheduleSyncController = StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _reviewSyncController = StreamController<dynamic>.broadcast();
 
   ChatRemoteDataSourceImpl({required this.apiClient});
 
@@ -100,8 +102,14 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Stream<dynamic> get scheduleSyncStream => _scheduleSyncController.stream;
 
   @override
+  Stream<dynamic> get reviewSyncStream => _reviewSyncController.stream;
+
+  @override
   void connectSocket() async {
-    if (_socket != null && _socket!.connected) {
+    if (_socket != null) {
+      if (!_socket!.connected) {
+         _socket!.connect();
+      }
       return;
     }
     
@@ -221,6 +229,11 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     _socket?.on('schedule_sync', (data) {
       print('[SOCKET] Schedule Sync Received: $data');
       _scheduleSyncController.add(data);
+    });
+
+    _socket?.on('review_sync', (data) {
+      print('[SOCKET] Review Sync Received: $data');
+      _reviewSyncController.add(data);
     });
 
     // Server sends 'message_sent' back to sender as confirmation after DB save.

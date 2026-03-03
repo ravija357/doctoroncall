@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-class Notification extends Equatable {
+class AppNotification extends Equatable {
   final String id;
   final String message;
   final String type; // 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR'
@@ -9,7 +9,7 @@ class Notification extends Equatable {
   final bool isRead;
   final DateTime createdAt;
 
-  const Notification({
+  const AppNotification({
     required this.id,
     required this.message,
     required this.type,

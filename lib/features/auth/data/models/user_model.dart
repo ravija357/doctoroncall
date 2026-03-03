@@ -22,6 +22,9 @@ class UserModel extends HiveObject {
   @HiveField(5)
   final String? profileImage;
 
+  @HiveField(6)
+  final Map<String, dynamic>? preferences;
+
   UserModel({
     this.id,
     required this.firstName,
@@ -29,6 +32,7 @@ class UserModel extends HiveObject {
     required this.email,
     required this.role,
     this.profileImage,
+    this.preferences,
   });
 
   Map<String, dynamic> toMap() {
@@ -39,6 +43,7 @@ class UserModel extends HiveObject {
       'email': email,
       'role': role,
       if (profileImage != null) 'profileImage': profileImage,
+      if (preferences != null) 'preferences': preferences,
     };
   }
 
@@ -50,6 +55,7 @@ class UserModel extends HiveObject {
       email: map['email'] as String,
       role: map['role'] as String? ?? 'PATIENT',
       profileImage: (map['profileImage'] ?? map['image']) as String?,
+      preferences: map['preferences'] != null ? Map<String, dynamic>.from(map['preferences'] as Map) : null,
     );
   }
 }

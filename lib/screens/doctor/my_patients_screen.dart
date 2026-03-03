@@ -1,24 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:doctoroncall/features/appointments/presentation/providers/appointment_provider.dart';
 import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
 import 'package:doctoroncall/features/appointments/domain/entities/appointment.dart';
 import 'package:doctoroncall/screens/doctor/patient_detail_screen.dart';
 import 'package:intl/intl.dart';
 
-class MyPatientsScreen extends StatelessWidget {
+class MyPatientsScreen extends ConsumerWidget {
   const MyPatientsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = const Color(0xFF4889A8);
+
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF4889A8), Color(0xFFF8FAFC)],
-            stops: [0.0, 0.3],
+            colors: isDark 
+              ? [Theme.of(context).scaffoldBackgroundColor, Theme.of(context).scaffoldBackgroundColor]
+              : [primaryColor, const Color(0xFFF8FAFC)],
+            stops: const [0.0, 0.3],
           ),
         ),
         child: SafeArea(
@@ -35,19 +41,19 @@ class MyPatientsScreen extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: isDark ? Theme.of(context).cardColor : Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.chevron_left, color: Colors.white),
+                        child: Icon(Icons.chevron_left, color: isDark ? Theme.of(context).iconTheme.color : Colors.white),
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
+                    Text(
                       'My Patients',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDark ? Theme.of(context).textTheme.titleLarge?.color : Colors.white,
                       ),
                     ),
                   ],
@@ -56,16 +62,16 @@ class MyPatientsScreen extends StatelessWidget {
 
               // Patient List
               Expanded(
-                child: BlocBuilder<AppointmentBloc, AppointmentState>(
-                  builder: (context, state) {
-                    if (state is AppointmentLoading) {
-                      return const Center(child: CircularProgressIndicator(color: Color(0xFF4889A8)));
+                child: () {
+                  final state = ref.watch(appointmentNotifierProvider);
+                  if (state is AppointmentLoading) {
+                      return Center(child: CircularProgressIndicator(color: isDark ? Theme.of(context).primaryColor : primaryColor));
                     }
                     if (state is DoctorAppointmentsLoaded) {
                       final patients = _groupPatients(state.appointments);
                       
                       if (patients.isEmpty) {
-                        return _buildEmptyState();
+                        return _buildEmptyState(context);
                       }
 
                       return ListView.separated(
@@ -81,12 +87,11 @@ class MyPatientsScreen extends StatelessWidget {
                         },
                       );
                     }
-                    return _buildEmptyState();
-                  },
+                    return _buildEmptyState(context);
+                  }(),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ),
       ),
     );
@@ -135,7 +140,7 @@ class MyPatientsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -144,8 +149,7 @@ class MyPatientsScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'No patients rostered',
-            style: TextStyle(
-              fontSize: 18,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade600,
             ),
@@ -187,17 +191,19 @@ class _PatientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.grey.shade100),
+          border: isDark ? Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)) : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -207,10 +213,10 @@ class _PatientCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: const Color(0xFF6AA9D8).withOpacity(0.15),
+              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.15),
               child: Text(
                 patient.name.isNotEmpty ? patient.name[0].toUpperCase() : 'P',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4889A8), fontSize: 20),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor, fontSize: 20),
               ),
             ),
             const SizedBox(width: 16),
@@ -220,10 +226,10 @@ class _PatientCard extends StatelessWidget {
                 children: [
                   Text(
                     patient.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1D26),
+                      color: Theme.of(context).textTheme.titleMedium?.color,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -243,10 +249,10 @@ class _PatientCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF4889A8),
+                color: Theme.of(context).primaryColor,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
-                  BoxShadow(color: const Color(0xFF4889A8).withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
+                  BoxShadow(color: Theme.of(context).primaryColor.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
                 ],
               ),
               child: Column(

@@ -28,4 +28,5 @@ abstract class ChatRepository {
   Stream<dynamic> doctorSyncStream();
   Stream<dynamic> scheduleSyncStream();
   Stream<dynamic> notificationSyncStream();
+  Stream<dynamic> reviewSyncStream();
 }

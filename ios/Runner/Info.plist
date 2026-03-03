@@ -71,5 +71,9 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs microphone access for audio and video calls.</string>
 
+	<key>NSFaceIDUsageDescription</key>
+	<string>This app needs FaceID access to unlock the application securely.</string>
+
+
 </dict>
 </plist>

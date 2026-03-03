@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:doctoroncall/core/di/injection_container.dart';
-import 'package:doctoroncall/features/messages/presentation/bloc/chat_bloc.dart';
-import 'package:doctoroncall/features/messages/presentation/bloc/chat_event.dart';
+import 'package:doctoroncall/features/messages/presentation/providers/chat_provider.dart';
 import 'package:doctoroncall/features/messages/presentation/bloc/chat_state.dart';
 import 'package:doctoroncall/features/messages/domain/entities/message.dart';
 import 'package:doctoroncall/features/messages/domain/repositories/chat_repository.dart';
@@ -15,7 +14,7 @@ import 'package:doctoroncall/features/call/jitsi_call_screen.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 
-class ChatScreen extends StatefulWidget {
+class ChatScreen extends ConsumerStatefulWidget {
   final String otherUserId;
   final String otherUserName;
 
@@ -26,10 +25,10 @@ class ChatScreen extends StatefulWidget {
   });
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   late Timer _statusTimer;
   bool _isConnected = false;
@@ -37,9 +36,12 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<ChatBloc>().add(ConnectSocketRequested());
-    context.read<ChatBloc>().add(LoadMessagesRequested(userId: widget.otherUserId));
-    context.read<ChatBloc>().add(MarkAsReadRequested(userId: widget.otherUserId));
+    Future.microtask(() {
+      final notifier = ref.read(chatNotifierProvider.notifier);
+      notifier.connectSocket();
+      notifier.loadMessages(widget.otherUserId);
+      notifier.markAsRead(widget.otherUserId);
+    });
 
     _statusTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final connected = sl<ChatRepository>().isSocketConnected;
@@ -51,8 +53,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _statusTimer.cancel();
     _messageController.dispose();
-    // Reset active chat ID so SnackBar notifications for this user can resume
-    context.read<ChatBloc>().add(ResetActiveChatUserId());
+    // Reset active chat ID
+    Future.microtask(() => ref.read(chatNotifierProvider.notifier).resetActiveChatUserId());
     super.dispose();
   }
 
@@ -60,44 +62,80 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    ref.listen<ChatState>(chatNotifierProvider, (previous, next) {
+      if (next is MessagesLoaded) {
+        final state = next;
+        if (state.messages.isNotEmpty &&
+            state.messages.last.senderId == widget.otherUserId) {
+          ref.read(chatNotifierProvider.notifier).markAsRead(widget.otherUserId);
+        }
+      }
+    });
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? theme.cardColor
+                    : Colors.black.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.chevron_left,
+                color: isDark ? theme.iconTheme.color : theme.primaryColor,
+                size: 28,
+              ),
+            ),
+          ),
+        ),
         title: Row(
           children: [
             Expanded(
               child: Text(
                 widget.otherUserName,
-                style: const TextStyle(
-                  fontFamily: 'PlayfairDisplay',
-                  fontWeight: FontWeight.w600,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.3,
                 ),
               ),
             ),
             Container(
-              width: 10,
-              height: 10,
+              width: 8,
+              height: 8,
               decoration: BoxDecoration(
                 color: _isConnected ? Colors.green : Colors.red,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  if (_isConnected)
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.4),
+                      blurRadius: 4,
+                    ),
+                ],
               ),
             ),
           ],
         ),
         actions: [
-          // Audio call
           IconButton(
-            icon: const Icon(Icons.phone_rounded, color: Color(0xFF6AA9D8)),
+            icon: Icon(Icons.phone_rounded, color: theme.primaryColor),
             tooltip: 'Audio Call',
             onPressed: () => _startCall(isVideo: false),
           ),
-          // Video call
           IconButton(
-            icon: const Icon(Icons.videocam_rounded, color: Color(0xFF6AA9D8)),
+            icon: Icon(Icons.videocam_rounded, color: theme.primaryColor),
             tooltip: 'Video Call',
             onPressed: () => _startCall(isVideo: true),
           ),
-          // Three-dot menu
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
@@ -131,62 +169,103 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ),
         ],
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-      ),
-      body: BlocListener<ChatBloc, ChatState>(
-        listenWhen: (p, c) => c is MessagesLoaded,
-        listener: (context, state) {
-          if (state is MessagesLoaded) {
-            // Check if the last message in the loaded list is from the other user
-            if (state.messages.isNotEmpty && state.messages.last.senderId == widget.otherUserId) {
-              context.read<ChatBloc>().add(MarkAsReadRequested(userId: widget.otherUserId));
-            }
-          }
-        },
-        child: Column(
-          children: [
-            // File uploading indicator
-            BlocBuilder<ChatBloc, ChatState>(
-              buildWhen: (p, c) => c is FileUploading || p is FileUploading,
-              builder: (_, state) {
-                if (state is FileUploading) {
-                  return Container(
-                    color: const Color(0xFF6AA9D8).withValues(alpha: 0.1),
-                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-                    child: const Row(
-                      children: [
-                        SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6AA9D8))),
-                        SizedBox(width: 10),
-                        Text('Uploading…', style: TextStyle(color: Color(0xFF6AA9D8), fontSize: 13)),
-                      ],
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  isDark
+                      ? theme.dividerColor.withOpacity(0.1)
+                      : Colors.grey.shade200,
+                  Colors.transparent,
+                ],
+              ),
             ),
-            // Message list
-            Expanded(
-              child: BlocBuilder<ChatBloc, ChatState>(
-                builder: (context, state) {
+          ),
+        ),
+      ),
+      body: Consumer(
+        builder: (context, ref, child) {
+          final state = ref.watch(chatNotifierProvider);
+          return Column(
+            children: [
+              // File uploading indicator
+              if (state is FileUploading)
+                Container(
+                  color: theme.primaryColor.withOpacity(0.1),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 16,
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Uploading…',
+                        style: TextStyle(
+                          color: theme.primaryColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              // Message list
+              Expanded(
+                child: (() {
                   if (state is ChatLoading) {
-                    return const Center(child: CircularProgressIndicator(color: Color(0xFF6AA9D8)));
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: theme.primaryColor,
+                      ),
+                    );
                   } else if (state is ChatError) {
                     return Center(child: Text(state.message));
                   } else if (state is MessagesLoaded) {
                     final messages = state.messages.reversed.toList();
                     if (messages.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'Start the conversation!',
-                          style: TextStyle(fontFamily: 'PlayfairDisplay', color: Colors.grey),
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              size: 48,
+                              color: isDark
+                                  ? Colors.grey.shade800
+                                  : Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Start the conversation!',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: isDark
+                                    ? Colors.grey.shade600
+                                    : Colors.grey.shade400,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }
                     return ListView.builder(
                       reverse: true,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final message = messages[index];
@@ -197,11 +276,11 @@ class _ChatScreenState extends State<ChatScreen> {
                           otherUserId: widget.otherUserId,
                           onDelete: (forEveryone) {
                             if (message.id != null) {
-                              context.read<ChatBloc>().add(DeleteMessageRequested(
-                                messageId: message.id!,
-                                receiverId: widget.otherUserId,
-                                forEveryone: forEveryone,
-                              ));
+                              ref.read(chatNotifierProvider.notifier).deleteMessage(
+                                    messageId: message.id!,
+                                    receiverId: widget.otherUserId,
+                                    forEveryone: forEveryone,
+                                  );
                             }
                           },
                         );
@@ -209,159 +288,26 @@ class _ChatScreenState extends State<ChatScreen> {
                     );
                   }
                   return const SizedBox.shrink();
-                },
+                })(),
               ),
-            ),
-            // Input bar
-            _buildInputBar(context),
-          ],
-        ),
+              // Input bar
+              _buildInputBar(theme, isDark),
+            ],
+          );
+        },
       ),
     );
   }
 
-  // ─────────────────────────────────── Input bar ────────────────────────────
-
-  Widget _buildInputBar(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.only(
-        left: 8,
-        right: 8,
-        top: 8,
-        bottom: MediaQuery.of(context).padding.bottom + 8,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // Attach button
-          IconButton(
-            icon: const Icon(Icons.attach_file_rounded, color: Color(0xFF6AA9D8)),
-            tooltip: 'Send file',
-            onPressed: _pickAndSendFile,
-          ),
-          // Image button
-          IconButton(
-            icon: const Icon(Icons.image_rounded, color: Color(0xFF6AA9D8)),
-            tooltip: 'Send image',
-            onPressed: _pickAndSendImage,
-          ),
-          // Text field
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: TextField(
-                controller: _messageController,
-                maxLines: 4,
-                minLines: 1,
-                decoration: const InputDecoration(
-                  hintText: 'Type a message…',
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                ),
-                onSubmitted: (_) => _sendMessage(context),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Send button
-          CircleAvatar(
-            backgroundColor: const Color(0xFF6AA9D8),
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 20),
-              onPressed: () => _sendMessage(context),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─────────────────────────────────── Actions ──────────────────────────────
-
-  void _sendMessage(BuildContext context) {
-    if (_messageController.text.trim().isEmpty) return;
-    final content = _messageController.text.trim();
-    _messageController.clear();
-
-    final message = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      senderId: 'me',
-      receiverId: widget.otherUserId,
-      content: content,
-      timestamp: DateTime.now(),
-    );
-    context.read<ChatBloc>().add(SendMessageRequested(message: message));
-  }
-
-  Future<void> _pickAndSendImage() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.image);
-    if (result != null && result.files.single.path != null && mounted) {
-      context.read<ChatBloc>().add(SendFileRequested(
-        filePath: result.files.single.path!,
-        receiverId: widget.otherUserId,
-        type: 'image',
-      ));
-    }
-  }
-
-  Future<void> _pickAndSendFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx', 'zip'],
-    );
-    if (result != null && result.files.single.path != null && mounted) {
-      context.read<ChatBloc>().add(SendFileRequested(
-        filePath: result.files.single.path!,
-        receiverId: widget.otherUserId,
-        type: 'file',
-      ));
-    }
-  }
-
-  void _showClearChatConfirm({required bool forEveryone}) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clear Chat'),
-        content: Text(
-          forEveryone
-              ? 'This will permanently delete all messages for both you and ${widget.otherUserName}.'
-              : 'This will clear the chat only for you.',
-        ),
-        actions: [
-          TextButton(child: const Text('Cancel'), onPressed: () => Navigator.pop(ctx)),
-          TextButton(
-            child: Text(
-              'Clear',
-              style: TextStyle(color: forEveryone ? Colors.red : Colors.orange),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<ChatBloc>().add(ClearChatRequested(
-                receiverId: widget.otherUserId,
-                forEveryone: forEveryone,
-              ));
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _startCall({required bool isVideo}) async {
+  void _startCall({required bool isVideo}) async {
     final apiClient = sl<ApiClient>();
     final localUserId = await apiClient.secureStorage.read(key: 'user_id') ?? '';
     if (!mounted) return;
 
     final roomName = 'doc-call-$localUserId-${DateTime.now().millisecondsSinceEpoch}';
     final chatRepo = sl<ChatRepository>();
-    
-    // Get sender name for call 
+
+    // Get sender name for call
     final box = Hive.box(HiveBoxes.users);
     final userData = box.get('currentUser');
     String senderName = 'User';
@@ -372,7 +318,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
     if (senderName.isEmpty) senderName = 'User';
 
-    // Instead of raw WebRTC, emit jitsi_invite
     try {
       chatRepo.emitCallUser(
         userToCall: widget.otherUserId,
@@ -395,9 +340,185 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
-}
 
-// ────────────────────────────────── Message Bubble ────────────────────────────
+  // ─────────────────────────────────── Input bar ────────────────────────────
+
+  Widget _buildInputBar(ThemeData theme, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+        ],
+        border: isDark
+            ? Border(
+                top: BorderSide(color: theme.dividerColor.withOpacity(0.1)),
+              )
+            : null,
+      ),
+      padding: EdgeInsets.only(
+        left: 8,
+        right: 8,
+        top: 8,
+        bottom: MediaQuery.of(context).padding.bottom + 8,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          IconButton(
+            icon: Icon(Icons.attach_file_rounded, color: theme.primaryColor),
+            tooltip: 'Send file',
+            onPressed: _pickAndSendFile,
+          ),
+          IconButton(
+            icon: Icon(Icons.image_rounded, color: theme.primaryColor),
+            tooltip: 'Send image',
+            onPressed: _pickAndSendImage,
+          ),
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isDark
+                      ? theme.dividerColor.withOpacity(0.1)
+                      : Colors.grey.shade200,
+                ),
+              ),
+              child: TextField(
+                controller: _messageController,
+                maxLines: 4,
+                minLines: 1,
+                style: theme.textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  hintText: 'Type a message…',
+                  hintStyle: TextStyle(
+                    color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                    fontSize: 14,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                ),
+                onSubmitted: (_) => _sendMessage(context),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: CircleAvatar(
+              radius: 22,
+              backgroundColor: theme.primaryColor,
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                onPressed: () => _sendMessage(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendMessage(BuildContext context) {
+    if (_messageController.text.trim().isEmpty) return;
+    final content = _messageController.text.trim();
+    _messageController.clear();
+
+    final message = Message(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      senderId: 'me',
+      receiverId: widget.otherUserId,
+      content: content,
+      timestamp: DateTime.now(),
+    );
+    ref.read(chatNotifierProvider.notifier).sendMessage(message);
+  }
+
+  Future<void> _pickAndSendImage() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.image);
+    if (result != null && result.files.single.path != null && mounted) {
+      ref.read(chatNotifierProvider.notifier).sendFile(
+        filePath: result.files.single.path!,
+        receiverId: widget.otherUserId,
+        type: 'image',
+      );
+    }
+  }
+
+  Future<void> _pickAndSendFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx', 'zip'],
+    );
+    if (result != null && result.files.single.path != null && mounted) {
+      ref.read(chatNotifierProvider.notifier).sendFile(
+        filePath: result.files.single.path!,
+        receiverId: widget.otherUserId,
+        type: 'file',
+      );
+    }
+  }
+
+  void _showClearChatConfirm({required bool forEveryone}) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Clear Chat',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          forEveryone
+              ? 'This will permanently delete all messages for both you and ${widget.otherUserName}.'
+              : 'This will clear the chat only for you.',
+          style: const TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          TextButton(
+            child: Text(
+              'Clear',
+              style: TextStyle(
+                color: forEveryone ? Colors.red : Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref.read(chatNotifierProvider.notifier).clearChat(
+                receiverId: widget.otherUserId,
+                forEveryone: forEveryone,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _MessageBubble extends StatelessWidget {
   final Message message;
@@ -415,27 +536,42 @@ class _MessageBubble extends StatelessWidget {
   void _showDeleteMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Container(
-              width: 36,
+              width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: Colors.grey.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             if (isMe)
               ListTile(
-                leading: const Icon(Icons.delete_forever, color: Colors.red),
-                title: const Text('Delete for everyone'),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.delete_forever,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                ),
+                title: const Text(
+                  'Delete for everyone',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: const Text('Remove from both sides'),
                 onTap: () {
                   Navigator.pop(context);
@@ -443,15 +579,29 @@ class _MessageBubble extends StatelessWidget {
                 },
               ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.orange),
-              title: const Text('Delete for me'),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.orange,
+                  size: 20,
+                ),
+              ),
+              title: const Text(
+                'Delete for me',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               subtitle: const Text('Only removed from your view'),
               onTap: () {
                 Navigator.pop(context);
                 onDelete(false);
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -460,6 +610,8 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isImage = message.type == 'image';
     final isFile = message.type == 'file';
 
@@ -468,33 +620,48 @@ class _MessageBubble extends StatelessWidget {
       child: Align(
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
           padding: isImage
               ? EdgeInsets.zero
-              : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isImage ? Colors.transparent : (isMe ? const Color(0xFF6AA9D8) : Colors.white),
+            color: isImage
+                ? Colors.transparent
+                : (isMe
+                      ? theme.primaryColor
+                      : (isDark ? theme.cardColor : Colors.grey.shade100)),
             borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(18),
-              topRight: const Radius.circular(18),
-              bottomLeft: isMe ? const Radius.circular(18) : const Radius.circular(2),
-              bottomRight: isMe ? const Radius.circular(2) : const Radius.circular(18),
+              topLeft: const Radius.circular(20),
+              topRight: const Radius.circular(20),
+              bottomLeft: isMe
+                  ? const Radius.circular(20)
+                  : const Radius.circular(4),
+              bottomRight: isMe
+                  ? const Radius.circular(4)
+                  : const Radius.circular(20),
             ),
             boxShadow: isImage
                 ? null
                 : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
+                    if (!isDark)
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
                   ],
+            border: isDark && !isMe && !isImage
+                ? Border.all(color: theme.dividerColor.withOpacity(0.1))
+                : null,
           ),
           child: Column(
-            crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: isMe
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
-              // Content
               if (isImage && message.fileUrl != null)
                 _ImageBubble(fileUrl: message.fileUrl!)
               else if (isFile && message.fileUrl != null)
@@ -507,18 +674,19 @@ class _MessageBubble extends StatelessWidget {
                 Text(
                   message.content,
                   style: TextStyle(
-                    color: isMe ? Colors.white : Colors.black87,
                     fontSize: 15,
+                    color: isMe ? Colors.white : theme.textTheme.bodyLarge?.color,
+                    height: 1.4,
                   ),
                 ),
-              // Timestamp
               if (!isImage) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   _formatTime(message.timestamp),
                   style: TextStyle(
                     fontSize: 10,
-                    color: isMe ? Colors.white.withValues(alpha: 0.7) : Colors.grey,
+                    fontWeight: FontWeight.w500,
+                    color: isMe ? Colors.white.withOpacity(0.7) : Colors.grey.shade500,
                   ),
                 ),
               ],
@@ -542,9 +710,7 @@ class _ImageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = fileUrl.startsWith('http')
-        ? fileUrl
-        : '${ApiConstants.baseUrl}$fileUrl';
+    final url = fileUrl.startsWith('http') ? fileUrl : '${ApiConstants.baseUrl}$fileUrl';
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: Image.network(
@@ -554,7 +720,11 @@ class _ImageBubble extends StatelessWidget {
         errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 60, color: Colors.grey),
         loadingBuilder: (_, child, progress) => progress == null
             ? child
-            : const SizedBox(width: 200, height: 140, child: Center(child: CircularProgressIndicator())),
+            : const SizedBox(
+                width: 200,
+                height: 140,
+                child: Center(child: CircularProgressIndicator()),
+              ),
       ),
     );
   }
@@ -564,7 +734,11 @@ class _FileBubble extends StatelessWidget {
   final String fileName;
   final String fileUrl;
   final bool isMe;
-  const _FileBubble({required this.fileName, required this.fileUrl, required this.isMe});
+  const _FileBubble({
+    required this.fileName,
+    required this.fileUrl,
+    required this.isMe,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -573,8 +747,11 @@ class _FileBubble extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.insert_drive_file_rounded,
-              color: isMe ? Colors.white : const Color(0xFF6AA9D8), size: 28),
+          Icon(
+            Icons.insert_drive_file_rounded,
+            color: isMe ? Colors.white : const Color(0xFF6AA9D8),
+            size: 28,
+          ),
           const SizedBox(width: 8),
           Flexible(
             child: Text(

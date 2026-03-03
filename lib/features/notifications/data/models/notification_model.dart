@@ -1,45 +1,40 @@
-import 'package:hive/hive.dart';
 import 'package:doctoroncall/features/notifications/domain/entities/notification.dart' as entity;
+import 'package:hive/hive.dart';
+
+part 'notification_model.g.dart';
 
 @HiveType(typeId: 3)
-class NotificationModel extends entity.Notification {
+class NotificationModel extends entity.AppNotification {
   @HiveField(0)
-  final String hiveId;
+  final String id;
 
   @HiveField(1)
-  final String hiveMessage;
+  final String message;
 
   @HiveField(2)
-  final String hiveType;
+  final String type;
 
   @HiveField(3)
-  final String? hiveRelatedId;
+  final String? relatedId;
 
   @HiveField(4)
-  final String? hiveLink;
+  final String? link;
 
   @HiveField(5)
-  final bool hiveIsRead;
+  final bool isRead;
 
   @HiveField(6)
-  final String hiveCreatedAtStr;
+  final DateTime createdAt;
 
   NotificationModel({
-    required String id,
-    required String message,
-    required String type,
-    String? relatedId,
-    String? link,
-    required bool isRead,
-    required DateTime createdAt,
-  })  : hiveId = id,
-        hiveMessage = message,
-        hiveType = type,
-        hiveRelatedId = relatedId,
-        hiveLink = link,
-        hiveIsRead = isRead,
-        hiveCreatedAtStr = createdAt.toIso8601String(),
-        super(
+    required this.id,
+    required this.message,
+    required this.type,
+    this.relatedId,
+    this.link,
+    required this.isRead,
+    required this.createdAt,
+  }) : super(
           id: id,
           message: message,
           type: type,

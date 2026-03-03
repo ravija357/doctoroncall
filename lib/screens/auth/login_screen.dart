@@ -1,21 +1,20 @@
-import 'package:doctoroncall/screens/patient/patient_main_screen.dart';
-import 'package:doctoroncall/screens/doctor/doctor_main_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:doctoroncall/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:doctoroncall/features/auth/presentation/bloc/auth_event.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:doctoroncall/features/auth/presentation/providers/auth_provider.dart';
 import 'package:doctoroncall/features/auth/presentation/bloc/auth_state.dart';
 import 'package:doctoroncall/screens/auth/signup_screen.dart';
+import 'package:doctoroncall/screens/doctor/doctor_main_screen.dart';
+import 'package:doctoroncall/screens/patient/patient_main_screen.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   final String? initialRole;
   const LoginScreen({super.key, this.initialRole});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -38,9 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    context.read<AuthBloc>().add(
-          LoginRequested(email: email, password: password),
-        );
+    ref.read(authProvider.notifier).login(email, password);
   }
 
   void _goToSignup() {
@@ -55,83 +52,86 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next is AuthAuthenticated) {
+        final state = next;
+        // Enforce portal separation: validate role matches selected portal
+        final selectedPortal = widget.initialRole?.toUpperCase();
+        final userRole = state.user.role.toUpperCase();
+
+        if (selectedPortal != null && userRole != selectedPortal) {
+          // Role mismatch — kick user back
+          ref.read(authProvider.notifier).logout();
+          final portalLabel = selectedPortal == 'DOCTOR' ? 'Doctor' : 'Patient';
+          final accountLabel = userRole == 'DOCTOR' ? 'Doctor' : 'Patient';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'This is the $portalLabel portal. Your account is registered as $accountLabel. Please use the correct portal.',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+              backgroundColor: const Color(0xFFE53935),
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+          return;
+        }
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => userRole == 'DOCTOR'
+                ? const DoctorMainScreen()
+                : const PatientMainScreen(),
+          ),
+        );
+      } else if (next is AuthError) {
+        final state = next;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(state.message)),
+        );
+      }
+    });
+
+    final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthAuthenticated) {
-            // Enforce portal separation: validate role matches selected portal
-            final selectedPortal = widget.initialRole?.toUpperCase();
-            final userRole = state.user.role.toUpperCase();
-
-            if (selectedPortal != null && userRole != selectedPortal) {
-              // Role mismatch — kick user back
-              context.read<AuthBloc>().add(LogoutRequested());
-              final portalLabel = selectedPortal == 'DOCTOR' ? 'Doctor' : 'Patient';
-              final accountLabel = userRole == 'DOCTOR' ? 'Doctor' : 'Patient';
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'This is the $portalLabel portal. Your account is registered as $accountLabel. Please use the correct portal.',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  backgroundColor: const Color(0xFFE53935),
-                  duration: const Duration(seconds: 4),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              );
-              return;
-            }
-
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => userRole == 'DOCTOR'
-                    ? const DoctorMainScreen()
-                    : const PatientMainScreen(),
-              ),
-            );
-          } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is AuthLoading) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF6AA9D8)),
-            );
-          }
-          
-          return Center(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: authState is AuthLoading
+          ? Center(
+              child: CircularProgressIndicator(color: Theme.of(context).primaryColor),
+            )
+          : Center(
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-              const Text(
+              Text(
                 'Doctor On Call',
                 style: TextStyle(
                   fontFamily: 'PlayfairDisplay',
                   fontSize: 34,
                   fontWeight: FontWeight.w600,
+                  color: Theme.of(context).textTheme.headlineLarge?.color,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),
 
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: Text(
                     'Email',
                     style: TextStyle(
                       fontFamily: 'PlayfairDisplay',
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
+                      color: Theme.of(context).textTheme.titleMedium?.color,
                     ),
                   ),
                 ),
@@ -144,16 +144,17 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24),
 
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: Text(
                     'Password',
                     style: TextStyle(
                       fontFamily: 'PlayfairDisplay',
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
+                      color: Theme.of(context).textTheme.titleMedium?.color,
                     ),
                   ),
                 ),
@@ -173,23 +174,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   minimumSize: const Size(0, 0),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text(
+                child: Text(
                   'Forgot Password?',
                   style: TextStyle(
                     fontFamily: 'PlayfairDisplay',
                     fontSize: 18,
-                    color: Color(0xFF6AA9D8),
+                    color: Theme.of(context).primaryColor,
                   ),
                 ),
               ),
               const SizedBox(height: 8),
 
-              const Text(
+              Text(
                 'Don’t have an account?',
                 style: TextStyle(
                   fontFamily: 'PlayfairDisplay',
                   fontSize: 18,
-                  color: Colors.black,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
                 ),
               ),
               const SizedBox(height: 16),
@@ -200,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ElevatedButton(
                   onPressed: _onLoginPressed,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6AA9D8),
+                    backgroundColor: Theme.of(context).primaryColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
@@ -225,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ElevatedButton(
                   onPressed: _goToSignup,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6AA9D8),
+                    backgroundColor: Theme.of(context).primaryColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
@@ -246,8 +247,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
         ),
-      );
-      },
       ),
     );
   }
@@ -266,19 +265,22 @@ class _RoundedField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: width ?? MediaQuery.of(context).size.width * 0.8,
       height: 80,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
+        border: isDark ? Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)) : null,
       ),
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -286,9 +288,10 @@ class _RoundedField extends StatelessWidget {
         controller: controller,
         obscureText: obscure,
         decoration: const InputDecoration(border: InputBorder.none),
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'PlayfairDisplay',
           fontSize: 18,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
         ),
       ),
     );

@@ -1,22 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:doctoroncall/features/appointments/presentation/providers/appointment_provider.dart';
 import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
 import 'package:intl/intl.dart';
 
-class PrescriptionsScreen extends StatelessWidget {
+class PrescriptionsScreen extends ConsumerWidget {
   const PrescriptionsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF4889A8), Color(0xFFF8FAFC)],
-            stops: [0.0, 0.3],
+            colors: isDark 
+              ? [theme.scaffoldBackgroundColor, theme.scaffoldBackgroundColor]
+              : [theme.primaryColor, theme.scaffoldBackgroundColor],
+            stops: const [0.0, 0.3],
           ),
         ),
         child: SafeArea(
@@ -33,19 +39,19 @@ class PrescriptionsScreen extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: isDark ? theme.cardColor : Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.chevron_left, color: Colors.white),
+                        child: Icon(Icons.chevron_left, color: isDark ? theme.iconTheme.color : Colors.white),
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
+                    Text(
                       'Prescriptions',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isDark ? theme.textTheme.titleLarge?.color : Colors.white,
                       ),
                     ),
                   ],
@@ -54,19 +60,18 @@ class PrescriptionsScreen extends StatelessWidget {
 
               // Records List
               Expanded(
-                child: BlocBuilder<AppointmentBloc, AppointmentState>(
-                  builder: (context, state) {
-                    if (state is AppointmentLoading) {
-                      return const Center(child: CircularProgressIndicator(color: Color(0xFF4889A8)));
+                child: () {
+                  final state = ref.watch(appointmentNotifierProvider);
+                  if (state is AppointmentLoading) {
+                      return Center(child: CircularProgressIndicator(color: isDark ? theme.primaryColor : theme.primaryColor));
                     }
                     if (state is AppointmentsLoaded) {
-                      // Filter appointments that might have prescriptions (e.g. completed)
                       final records = state.appointments
                           .where((a) => a.status.toLowerCase() == 'completed')
                           .toList();
                       
                       if (records.isEmpty) {
-                        return _buildEmptyState();
+                        return _buildEmptyState(theme, isDark);
                       }
 
                       return ListView.separated(
@@ -79,9 +84,8 @@ class PrescriptionsScreen extends StatelessWidget {
                         },
                       );
                     }
-                    return _buildEmptyState();
-                  },
-                ),
+                    return _buildEmptyState(theme, isDark);
+                  }(),
               ),
             ],
           ),
@@ -90,19 +94,18 @@ class PrescriptionsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme, bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.medication, size: 80, color: Colors.grey.shade300),
+          Icon(Icons.medication, size: 80, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
           const SizedBox(height: 16),
           Text(
             'No prescriptions found',
-            style: TextStyle(
-              fontSize: 18,
+            style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
             ),
           ),
           const SizedBox(height: 8),
@@ -111,7 +114,7 @@ class PrescriptionsScreen extends StatelessWidget {
             child: Text(
               'Digital prescriptions from your visits will appear here.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade400),
+              style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade400, fontSize: 13),
             ),
           ),
         ],
@@ -126,20 +129,23 @@ class _PrescriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final dateStr = DateFormat('MMMM d, y').format(record.dateTime);
     
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(
+          if (!isDark) BoxShadow(
             color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
+        border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,10 +155,10 @@ class _PrescriptionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.teal.shade50,
+                  color: isDark ? Colors.teal.withOpacity(0.1) : Colors.teal.shade50,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(Icons.medication_rounded, color: Colors.teal.shade600),
+                child: Icon(Icons.medication_rounded, color: isDark ? Colors.teal.shade300 : Colors.teal.shade600),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -161,22 +167,25 @@ class _PrescriptionCard extends StatelessWidget {
                   children: [
                     Text(
                       'Prescription',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade800,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       'Dr. ${record.doctorName ?? "Specialist"}',
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                      style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade500, fontSize: 13),
                     ),
                   ],
                 ),
               ),
               Text(
                 dateStr,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 13,
+                  color: theme.textTheme.bodyMedium?.color
+                ),
               ),
             ],
           ),
@@ -189,7 +198,7 @@ class _PrescriptionCard extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: const Text('Opening prescription PDF...'),
-                        backgroundColor: const Color(0xFF4889A8),
+                        backgroundColor: theme.primaryColor,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
@@ -198,7 +207,7 @@ class _PrescriptionCard extends StatelessWidget {
                   icon: const Icon(Icons.visibility_outlined, size: 18),
                   label: const Text('View PDF'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4889A8),
+                    backgroundColor: theme.primaryColor,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -209,8 +218,9 @@ class _PrescriptionCard extends StatelessWidget {
               const SizedBox(width: 12),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: isDark ? theme.scaffoldBackgroundColor : theme.scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
+                  border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
                 ),
                 child: IconButton(
                   onPressed: () {
@@ -229,7 +239,7 @@ class _PrescriptionCard extends StatelessWidget {
                     );
                   },
                   icon: const Icon(Icons.file_download_outlined),
-                  color: Colors.grey.shade700,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
                 ),
               ),
             ],

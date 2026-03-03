@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Stack(
           children: [
@@ -85,7 +85,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   width: _index == i ? 14 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: _index == i ? _blue : Colors.grey.shade300,
+                    color: _index == i ? Theme.of(context).primaryColor : Theme.of(context).dividerColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -169,13 +169,13 @@ class _OnboardPage extends StatelessWidget {
               width: 180,
               height: 180,
               decoration: BoxDecoration(
-                color: const Color(0xFF6AA9D8).withOpacity(0.05), 
+                color: Theme.of(context).primaryColor.withOpacity(0.1), 
                 borderRadius: BorderRadius.circular(40),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.medical_services_outlined,
                 size: 90,
-                color: Color(0xFF6AA9D8),
+                color: Theme.of(context).primaryColor,
               ),
             ),
           ),
@@ -191,10 +191,10 @@ class _OnboardPage extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             subtitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'PlayfairDisplay',
               fontSize: 18,
-              color: Colors.black87,
+              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
             ),
           ),
           const Spacer(),

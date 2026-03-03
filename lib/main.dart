@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:doctoroncall/app.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:doctoroncall/core/di/injection_container.dart';
+import 'package:doctoroncall/core/theme/theme_service.dart';
 
 // Hive TypeAdapters (auto-generated via build_runner)
 import 'package:doctoroncall/features/auth/data/models/user_model.dart';
@@ -34,5 +36,8 @@ Future<void> main() async {
   await Hive.openBox(HiveBoxes.notifications);
   await Hive.openBox(HiveBoxes.chatContacts);
 
-  runApp(const App());
+  // Initialize Theme
+  await ThemeService().init();
+
+  runApp(const ProviderScope(child: App()));
 }

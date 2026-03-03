@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:doctoroncall/features/appointments/presentation/providers/appointment_provider.dart';
 import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
+import 'package:doctoroncall/features/doctors/presentation/providers/doctor_provider.dart';
+import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_state.dart';
 import 'package:doctoroncall/core/network/api_client.dart';
 import 'package:doctoroncall/core/di/injection_container.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_bloc.dart';
-import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_event.dart';
-import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_state.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/intl.dart';
 
-class RevenueScreen extends StatefulWidget {
+class RevenueScreen extends ConsumerStatefulWidget {
   const RevenueScreen({super.key});
 
   @override
-  State<RevenueScreen> createState() => _RevenueScreenState();
+  ConsumerState<RevenueScreen> createState() => _RevenueScreenState();
 }
 
-class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProviderStateMixin {
+class _RevenueScreenState extends ConsumerState<RevenueScreen> with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
@@ -45,7 +46,7 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
 
   void _syncFeeFromBloc() {
     if (!mounted) return;
-    final doctorState = context.read<DoctorBloc>().state;
+    final doctorState = ref.read(doctorNotifierProvider);
     if (doctorState is DoctorsLoaded) {
       final currentUserData = Hive.box(HiveBoxes.users).get('currentUser');
       final currentUserId = currentUserData is Map 
@@ -97,7 +98,7 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
       if (!mounted) return;
       
       // Trigger a reload of doctors to refresh other screens
-      context.read<DoctorBloc>().add(LoadDoctorsRequested());
+      ref.read(doctorNotifierProvider.notifier).loadDoctors();
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -122,18 +123,20 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Revenue & Earnings',
-          style: TextStyle(
-            color: Color(0xFF1A1D26),
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.3,
           ),
         ),
         leading: GestureDetector(
@@ -141,10 +144,11 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
           child: Container(
             margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F4F8),
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(12),
+              border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
             ),
-            child: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF344955), size: 18),
+            child: Icon(Icons.arrow_back_ios_new, color: theme.iconTheme.color, size: 18),
           ),
         ),
       ),
@@ -152,35 +156,33 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
         opacity: _fadeAnim,
         child: SlideTransition(
           position: _slideAnim,
-          child: BlocBuilder<AppointmentBloc, AppointmentState>(
-            builder: (context, state) {
-              if (state is DoctorAppointmentsLoaded) {
-                _cachedAppointments = state.appointments;
-              }
+          child: () {
+            final state = ref.watch(appointmentNotifierProvider);
+            if (state is DoctorAppointmentsLoaded) {
+              _cachedAppointments = state.appointments;
+            }
               
               if (state is AppointmentLoading && _cachedAppointments.isEmpty) {
-                return const Center(child: CircularProgressIndicator(color: Color(0xFF6AA9D8)));
+                return Center(child: CircularProgressIndicator(color: theme.primaryColor));
               }
               
               final appointments = _cachedAppointments;
               final bool isRefreshing = state is AppointmentLoading;
               
-              // Only consider completed and confirmed appointments for revenue
               final completed = appointments.where((a) {
                 final s = a.status.toLowerCase();
                 return s == 'completed' || s == 'confirmed';
               }).toList();
               
-              // Calculate current month's revenue vs total
               final now = DateTime.now();
               final currentMonthCompleted = completed.where((a) {
                 final d = DateTime.tryParse(a.dateTime.toString()) ?? a.dateTime;
                 return d.year == now.year && d.month == now.month;
               }).toList();
               
-              return BlocBuilder<DoctorBloc, DoctorState>(
-                builder: (context, doctorState) {
-                  double fees = 1000.0;
+              return () {
+                final doctorState = ref.watch(doctorNotifierProvider);
+                double fees = 1000.0;
                   final box = Hive.box(HiveBoxes.users);
                   final userData = box.get('currentUser');
                   
@@ -192,7 +194,6 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
                       try {
                         final myDoc = (doctorState as DoctorsLoaded).doctors.firstWhere((d) => d.userId == currentUserId);
                         fees = myDoc.fees;
-                        // Update the text field if the fee changed externally
                         if (!_isUpdatingFee && _feeController.text != myDoc.fees.toStringAsFixed(0)) {
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             if (mounted) _feeController.text = myDoc.fees.toStringAsFixed(0);
@@ -208,30 +209,29 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
                   return CustomScrollView(
                     slivers: [
                       SliverToBoxAdapter(
-                        child:Padding(
+                        child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (isRefreshing)
-                                const Padding(
-                                  padding: EdgeInsets.only(bottom: 12),
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
                                   child: LinearProgressIndicator(
                                     backgroundColor: Colors.transparent,
-                                    color: Color(0xFF6AA9D8),
+                                    color: theme.primaryColor,
                                     minHeight: 2,
                                   ),
                                 ),
-                              _buildRevenueHero(totalRevenue, monthlyRevenue),
+                              _buildRevenueHero(theme, totalRevenue, monthlyRevenue),
                               const SizedBox(height: 24),
-                              _buildFeeEditor(fees),
+                              _buildFeeEditor(theme, isDark, fees),
                               const SizedBox(height: 32),
-                              const Text(
+                              Text(
                                 'Recent Transactions',
-                                style: TextStyle(
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
                                   fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1A1D26),
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -250,24 +250,23 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
                                 Container(
                                   padding: const EdgeInsets.all(24),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
+                                    color: theme.primaryColor.withOpacity(0.1),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Icon(Icons.receipt_long_rounded, size: 60, color: Colors.blue.shade200),
+                                  child: Icon(Icons.receipt_long_rounded, size: 60, color: theme.primaryColor.withOpacity(0.5)),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No transactions yet',
-                                  style: TextStyle(
-                                    fontSize: 18,
+                                  style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade600,
+                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   'Completed appointments will appear here.',
-                                  style: TextStyle(color: Colors.grey.shade500),
+                                  style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade500),
                                 ),
                               ],
                             ),
@@ -279,7 +278,6 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
                           sliver: SliverList(
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
-                                // Show most recent first
                                 final record = completed[completed.length - 1 - index];
                                 return _TransactionCard(record: record, feeAmount: fees);
                               },
@@ -290,29 +288,27 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
                       const SliverToBoxAdapter(child: SizedBox(height: 40)),
                     ],
                   );
-                }
-              );
-            },
-          ),
+              }();
+            }(),
         ),
       ),
     );
   }
 
-  Widget _buildRevenueHero(double total, double monthly) {
+  Widget _buildRevenueHero(ThemeData theme, double total, double monthly) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6AA9D8), Color(0xFF4889A8)],
+        gradient: LinearGradient(
+          colors: [theme.primaryColor, theme.primaryColor.withOpacity(0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6AA9D8).withOpacity(0.4),
+            color: theme.primaryColor.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -346,7 +342,7 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
           Text(
             'Rs. ${total.toStringAsFixed(0)}',
             style: const TextStyle(
-              fontSize: 36,
+              fontSize: 34,
               fontWeight: FontWeight.w800,
               color: Colors.white,
               letterSpacing: -1,
@@ -377,10 +373,10 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Completed', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13)),
+                    Text('Available', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13)),
                     const SizedBox(height: 4),
                     const Text(
-                      'Ready to withdraw',
+                      'Withdraw Now',
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                   ],
@@ -393,27 +389,31 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildFeeEditor(double currentFee) {
+  Widget _buildFeeEditor(ThemeData theme, bool isDark, double currentFee) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5)),
+          if (!isDark) BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
         ],
-        border: Border.all(color: const Color(0xFFF0F4F8)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.edit_note_rounded, color: Color(0xFF6AA9D8), size: 22),
-              SizedBox(width: 8),
+              Icon(Icons.edit_note_rounded, color: theme.primaryColor, size: 22),
+              const SizedBox(width: 8),
               Text(
                 'Consultation Fee',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF1A1D26)),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -424,18 +424,18 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
                 child: Container(
                   height: 52,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFB),
+                    color: isDark ? theme.scaffoldBackgroundColor : const Color(0xFFF8FAFB),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: isDark ? theme.dividerColor.withOpacity(0.2) : Colors.grey.shade200),
                   ),
                   child: TextField(
                     controller: _feeController,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                     decoration: InputDecoration(
-                      prefixIcon: const Padding(
-                        padding: EdgeInsets.all(14.0),
-                        child: Text('Rs.', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.grey, fontSize: 16)),
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.all(14.0),
+                        child: Text('Rs.', style: TextStyle(fontWeight: FontWeight.w700, color: isDark ? Colors.grey.shade400 : Colors.grey, fontSize: 16)),
                       ),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -451,17 +451,17 @@ class _RevenueScreenState extends State<RevenueScreen> with SingleTickerProvider
                   height: 52,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1D26),
+                    color: theme.primaryColor,
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
-                      BoxShadow(color: const Color(0xFF1A1D26).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
+                      BoxShadow(color: theme.primaryColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
                     ],
                   ),
                   child: Center(
                     child: _isUpdatingFee
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : const Text(
-                            'Save',
+                            'Update',
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
                           ),
                   ),
@@ -483,6 +483,8 @@ class _TransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final dateStr = DateFormat('MMM d, y • h:mm a').format(record.dateTime);
     final patientName = record.patientName ?? "Patient";
     
@@ -490,22 +492,22 @@ class _TransactionCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+          if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
         ],
-        border: Border.all(color: Colors.grey.shade100),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.green.shade50,
+              color: Colors.green.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.check_circle_rounded, color: Colors.green.shade500, size: 24),
+            child: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -514,12 +516,12 @@ class _TransactionCard extends StatelessWidget {
               children: [
                 Text(
                   patientName,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF1A1D26)),
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   dateStr,
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                  style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade500, fontSize: 12),
                 ),
               ],
             ),
@@ -539,12 +541,12 @@ class _TransactionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade50,
+                  color: Colors.green.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(
+                child: const Text(
                   'Completed',
-                  style: TextStyle(color: Colors.green.shade700, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
             ],

@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:doctoroncall/features/doctors/domain/entities/schedule.dart';
-import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_bloc.dart';
-import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_event.dart';
-import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_state.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 
-class AvailabilityScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:doctoroncall/features/doctors/presentation/providers/doctor_provider.dart';
+import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_state.dart';
+
+class AvailabilityScreen extends ConsumerStatefulWidget {
   const AvailabilityScreen({super.key});
 
   @override
-  State<AvailabilityScreen> createState() => _AvailabilityScreenState();
+  ConsumerState<AvailabilityScreen> createState() => _AvailabilityScreenState();
 }
 
-class _AvailabilityScreenState extends State<AvailabilityScreen> {
+class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
   List<Schedule> _schedules = [];
   bool _isInitialLoad = true;
 
@@ -25,17 +25,17 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   @override
   void initState() {
     super.initState();
-    _checkAndLoad();
+    Future.microtask(() => _checkAndLoad());
   }
 
   void _checkAndLoad() {
-    final state = context.read<DoctorBloc>().state;
+    final state = ref.read(doctorNotifierProvider);
     print('[AVAILABILITY] Current state: $state');
     if (state is DoctorsLoaded) {
       _loadMySchedule(state);
     } else {
-      print('[AVAILABILITY] Triggering LoadDoctorsRequested');
-      context.read<DoctorBloc>().add(const LoadDoctorsRequested());
+      print('[AVAILABILITY] Triggering loadDoctors');
+      ref.read(doctorNotifierProvider.notifier).loadDoctors();
     }
   }
 
@@ -61,7 +61,6 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       });
     } catch (e) {
       print('[AVAILABILITY] Error finding me in doctors list: $e');
-      // If we are initialized but haven't found me, maybe show an error or blank
       setState(() {
         _isInitialLoad = false;
       });
@@ -103,31 +102,36 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<DoctorBloc, DoctorState>(
-      listener: (context, state) {
-        if (state is DoctorsLoaded) {
-          _loadMySchedule(state);
-        }
-        if (state is DoctorScheduleUpdated) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Schedule updated successfully!')),
-          );
-          Navigator.pop(context);
-        }
-        if (state is DoctorError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
-        }
-      },
-      child: Scaffold(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = const Color(0xFF4889A8);
+
+    ref.listen<DoctorState>(doctorNotifierProvider, (previous, next) {
+      if (next is DoctorsLoaded) {
+        _loadMySchedule(next);
+      } else if (next is DoctorScheduleUpdated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Schedule updated successfully!')),
+        );
+        Navigator.pop(context);
+      } else if (next is DoctorError) {
+        final errorState = next as DoctorError;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorState.message)),
+        );
+      }
+    });
+
+    return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF4889A8), Color(0xFFF8FAFC)],
-              stops: [0.0, 0.3],
+              colors: isDark 
+                ? [Theme.of(context).scaffoldBackgroundColor, Theme.of(context).scaffoldBackgroundColor]
+                : [primaryColor, const Color(0xFFF8FAFC)],
+              stops: const [0.0, 0.3],
             ),
           ),
           child: SafeArea(
@@ -146,26 +150,32 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: isDark ? Theme.of(context).cardColor : Colors.white.withOpacity(0.2),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.chevron_left, color: Colors.white),
+                              child: Icon(Icons.chevron_left, color: isDark ? Theme.of(context).iconTheme.color : Colors.white),
                             ),
                           ),
                           const SizedBox(width: 16),
-                          const Text(
+                          Text(
                             'Availability',
-                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(
+                              fontSize: 24, 
+                              fontWeight: FontWeight.bold, 
+                              color: isDark ? Theme.of(context).textTheme.titleLarge?.color : Colors.white
+                            ),
                           ),
                         ],
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          context.read<DoctorBloc>().add(UpdateDoctorScheduleRequested(schedules: _schedules));
+                          ref.read(doctorNotifierProvider.notifier).updateSchedule(
+                            _schedules.map((s) => s.toJson()).toList(),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF4889A8),
+                          backgroundColor: isDark ? Theme.of(context).primaryColor : Colors.white,
+                          foregroundColor: isDark ? Colors.white : primaryColor,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           elevation: 0,
                         ),
@@ -177,7 +187,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
 
                 Expanded(
                   child: _schedules.isEmpty 
-                    ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                    ? Center(child: CircularProgressIndicator(color: isDark ? Theme.of(context).primaryColor : Colors.white))
                     : ListView.separated(
                         padding: const EdgeInsets.all(20),
                         itemCount: _schedules.length,
@@ -205,7 +215,6 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 }
@@ -232,16 +241,24 @@ class _ScheduleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: schedule.isOff ? Colors.grey.shade50 : Colors.white,
+        color: schedule.isOff 
+          ? (isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade50) 
+          : Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: schedule.isOff ? Colors.grey.shade200 : Colors.transparent),
+        border: Border.all(
+          color: schedule.isOff 
+            ? (isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade200) 
+            : Theme.of(context).dividerColor.withOpacity(0.1)
+        ),
         boxShadow: [
           if (!schedule.isOff)
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -256,7 +273,7 @@ class _ScheduleItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: schedule.isOff ? Colors.grey : Colors.black87,
+                color: schedule.isOff ? Colors.grey : Theme.of(context).textTheme.bodyLarge?.color,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -292,7 +309,7 @@ class _ScheduleItem extends StatelessWidget {
           Switch(
             value: !schedule.isOff,
             onChanged: (val) => onToggleOff(!val),
-            activeColor: const Color(0xFF4889A8),
+            activeColor: Theme.of(context).primaryColor,
           ),
         ],
       ),
@@ -308,18 +325,20 @@ class _TimeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF4889A8)),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
         ),
       ),
     );

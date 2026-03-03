@@ -13,6 +13,13 @@ class Schedule extends Equatable {
     required this.isOff,
   });
 
+  Map<String, dynamic> toJson() => {
+        'day': day,
+        'startTime': startTime,
+        'endTime': endTime,
+        'isOff': isOff,
+      };
+
   @override
   List<Object?> get props => [day, startTime, endTime, isOff];
 }

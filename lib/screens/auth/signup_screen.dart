@@ -1,20 +1,19 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:doctoroncall/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:doctoroncall/features/auth/presentation/bloc/auth_event.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:doctoroncall/features/auth/presentation/providers/auth_provider.dart';
 import 'package:doctoroncall/features/auth/presentation/bloc/auth_state.dart';
+import 'package:flutter/material.dart';
 import 'package:doctoroncall/screens/patient/patient_main_screen.dart';
 import 'package:doctoroncall/screens/doctor/doctor_main_screen.dart';
 
-class SignupScreen extends StatefulWidget {
+class SignupScreen extends ConsumerStatefulWidget {
   final String? initialRole;
   const SignupScreen({super.key, this.initialRole});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -45,221 +44,209 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    context.read<AuthBloc>().add(
-          SignupRequested(
-            firstName: firstName,
-            lastName: lastName,
-            email: email,
-            password: password,
-            role: _isDoctor ? 'DOCTOR' : 'PATIENT',
-          ),
+    ref.read(authProvider.notifier).signup(
+          firstName,
+          lastName,
+          email,
+          password,
+          _isDoctor ? 'DOCTOR' : 'PATIENT',
         );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
+    final isDark = theme.brightness == Brightness.dark;
+
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next is AuthAuthenticated) {
+        final state = next;
+        final userRole = state.user.role.toUpperCase();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => userRole == 'DOCTOR'
+                ? const DoctorMainScreen()
+                : const PatientMainScreen(),
+          ),
+          (route) => false,
+        );
+      } else if (next is AuthError) {
+        final state = next;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(state.message)),
+        );
+      }
+    });
+
+    final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthAuthenticated) {
-            final userRole = state.user.role.toUpperCase();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => userRole == 'DOCTOR'
-                    ? const DoctorMainScreen()
-                    : const PatientMainScreen(),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: authState is AuthLoading
+          ? Center(child: CircularProgressIndicator(color: theme.primaryColor))
+          : Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark 
+                    ? [const Color(0xFF1A1F24), const Color(0xFF121212)]
+                    : [const Color(0xFFF0F4F8), Colors.white],
               ),
-              (route) => false,
-            );
-          } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is AuthLoading) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF6AA9D8)));
-          }
-          
-          return Center(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-              const Text(
-                'Doctor On Call',
-                style: TextStyle(
-                  fontFamily: 'PlayfairDisplay',
-                  fontSize: 34,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 50),
-
-              const _LabelText('First Name'),
-              const SizedBox(height: 8),
-              _RoundedField(
-                width: size.width * 0.8,
-                controller: _firstNameController,
-              ),
-              const SizedBox(height: 20),
-
-              const _LabelText('Last Name'),
-              const SizedBox(height: 8),
-              _RoundedField(
-                width: size.width * 0.8,
-                controller: _lastNameController,
-              ),
-              const SizedBox(height: 20),
-
-              const _LabelText('Email'),
-              const SizedBox(height: 8),
-              _RoundedField(
-                width: size.width * 0.8,
-                controller: _emailController,
-              ),
-              const SizedBox(height: 24),
-
-              const _LabelText('Password'),
-              const SizedBox(height: 8),
-              _RoundedField(
-                obscure: true,
-                controller: _passwordController,
-              ),
-              const SizedBox(height: 24),
-
-              // Role badge — locked to selected portal
-              Container(
-                width: size.width * 0.8,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6AA9D8).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF6AA9D8).withOpacity(0.3)),
-                ),
-                child: Row(
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      _isDoctor ? Icons.medical_services_outlined : Icons.person_outline,
-                      color: const Color(0xFF6AA9D8),
-                      size: 24,
+                    const SizedBox(height: 20),
+                    IconButton(
+                      icon: Icon(Icons.arrow_back_ios, color: theme.primaryColor),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(height: 20),
                     Text(
-                      'Registering as ${_isDoctor ? 'Doctor' : 'Patient'}',
-                      style: const TextStyle(
-                        fontFamily: 'PlayfairDisplay',
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF6AA9D8),
+                      'Create Account',
+                      style: theme.textTheme.headlineLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: theme.primaryColor,
                       ),
                     ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Sign up as a ${_isDoctor ? "Doctor" : "Patient"}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    _ModernTextField(
+                      controller: _firstNameController,
+                      label: 'First Name',
+                      icon: Icons.person_outline,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 20),
+                    _ModernTextField(
+                      controller: _lastNameController,
+                      label: 'Last Name',
+                      icon: Icons.person_outline,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 20),
+                    _ModernTextField(
+                      controller: _emailController,
+                      label: 'Email',
+                      icon: Icons.email_outlined,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 20),
+                    _ModernTextField(
+                      controller: _passwordController,
+                      label: 'Password',
+                      icon: Icons.lock_outline,
+                      isDark: isDark,
+                      isPassword: true,
+                    ),
+                    const SizedBox(height: 40),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 60,
+                      child: ElevatedButton(
+                        onPressed: _onSignUpPressed,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          elevation: 5,
+                          shadowColor: theme.primaryColor.withOpacity(0.4),
+                        ),
+                        child: const Text(
+                          'Sign Up',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Already have an account? ',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Text(
+                            'Login',
+                            style: TextStyle(
+                              color: theme.primaryColor,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
-
-              SizedBox(
-                width: size.width * 0.8,
-                height: 70,
-                child: ElevatedButton(
-                  onPressed: _onSignUpPressed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6AA9D8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Sign Up',
-                    style: TextStyle(
-                      fontFamily: 'PlayfairDisplay',
-                      fontSize: 24,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 40),
-            ],
+            ),
           ),
-        ),
-      );
-      },
-      ),
     );
   }
 }
 
-class _LabelText extends StatelessWidget {
-  final String text;
-  const _LabelText(this.text);
+class _ModernTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final bool isDark;
+  final bool isPassword;
 
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontFamily: 'PlayfairDisplay',
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoundedField extends StatelessWidget {
-  final bool obscure;
-  final double? width;
-  final TextEditingController? controller;
-
-  const _RoundedField({
-    this.obscure = false,
-    this.width,
-    this.controller,
+  const _ModernTextField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    required this.isDark,
+    this.isPassword = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: width ?? MediaQuery.of(context).size.width * 0.8,
-      height: 80,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
+        color: isDark ? const Color(0xFF2C3135) : Colors.white,
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
       child: TextField(
         controller: controller,
-        obscureText: obscure,
-        decoration: const InputDecoration(
+        obscureText: isPassword,
+        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: Colors.grey.shade500),
+          prefixIcon: Icon(icon, color: Theme.of(context).primaryColor),
           border: InputBorder.none,
-        ),
-        style: const TextStyle(
-          fontFamily: 'PlayfairDisplay',
-          fontSize: 18,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         ),
       ),
     );

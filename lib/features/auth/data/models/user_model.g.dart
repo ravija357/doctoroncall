@@ -23,13 +23,14 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       email: fields[3] as String,
       role: fields[4] as String,
       profileImage: fields[5] as String?,
+      preferences: (fields[6] as Map?)?.cast<String, dynamic>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, UserModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       ..writeByte(4)
       ..write(obj.role)
       ..writeByte(5)
-      ..write(obj.profileImage);
+      ..write(obj.profileImage)
+      ..writeByte(6)
+      ..write(obj.preferences);
   }
 
   @override

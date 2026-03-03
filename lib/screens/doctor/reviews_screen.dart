@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:doctoroncall/core/network/api_client.dart';
 import 'package:doctoroncall/core/di/injection_container.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:doctoroncall/features/messages/domain/repositories/chat_repository.dart';
 
 class ReviewsScreen extends StatefulWidget {
   const ReviewsScreen({super.key});
@@ -20,6 +21,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
 
   List<dynamic> _reviews = [];
   bool _isLoading = true;
+  StreamSubscription? _reviewSyncSubscription;
 
   @override
   void initState() {
@@ -32,15 +34,49 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
     _animController.forward();
 
     _fetchReviews();
+    _setupSyncListener();
+  }
+
+  void _setupSyncListener() {
+    _reviewSyncSubscription = sl<ChatRepository>().reviewSyncStream().listen((data) {
+      final box = Hive.box(HiveBoxes.users);
+      final userData = box.get('currentUser');
+      String? currentDoctorId;
+      
+      if (userData is Map) {
+        currentDoctorId = userData['id'] as String?;
+      } else {
+        currentDoctorId = box.get('userId') as String?;
+      }
+
+      final incomingDoctorId = data is Map ? data['doctorId']?.toString() : null;
+
+      if (incomingDoctorId == null || incomingDoctorId == currentDoctorId) {
+        print('[REVIEWS] Real-time sync event received for this doctor, refreshing...');
+        _fetchReviews();
+      }
+    });
   }
 
   Future<void> _fetchReviews() async {
     try {
-      final apiClient = sl<ApiClient>();
+      final box = Hive.box(HiveBoxes.users);
+      final userData = box.get('currentUser');
+      String? doctorId;
       
-      // Attempt to hit the reviews endpoint. If it doesn't exist, we will fallback to empty state.
-      // Usually it's /reviews or /reviews/doctor/xyz
-      final response = await apiClient.dio.get('/reviews');
+      if (userData is Map) {
+        doctorId = userData['id'] as String?;
+      } else {
+        doctorId = box.get('userId') as String?;
+      }
+
+      if (doctorId == null) {
+         setState(() => _isLoading = false);
+         return;
+      }
+
+      final apiClient = sl<ApiClient>();
+      final response = await apiClient.dio.get('/reviews/$doctorId');
       
       if (response.statusCode == 200 && response.data['success'] == true) {
         if (mounted) {
@@ -64,23 +100,26 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
   @override
   void dispose() {
     _animController.dispose();
+    _reviewSyncSubscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Patient Reviews',
-          style: TextStyle(
-            color: Color(0xFF1A1D26),
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
           ),
         ),
         leading: GestureDetector(
@@ -88,10 +127,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
           child: Container(
             margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F4F8),
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(12),
+              border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
             ),
-            child: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF344955), size: 18),
+            child: Icon(Icons.arrow_back_ios_new, color: isDark ? Colors.white : const Color(0xFF344955), size: 18),
           ),
         ),
       ),
@@ -108,7 +148,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
           }
 
           if (_isLoading) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF6AA9D8)));
+            return Center(child: CircularProgressIndicator(color: theme.primaryColor));
           }
 
           return FadeTransition(
@@ -123,14 +163,12 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildRatingHeader(rating, totalReviews),
+                          _buildRatingHeader(rating, totalReviews, theme, isDark),
                           const SizedBox(height: 32),
-                          const Text(
+                          Text(
                             'Recent Feedback',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1D26),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -157,10 +195,9 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
                             const SizedBox(height: 16),
                             Text(
                               'No reviews yet',
-                              style: TextStyle(
-                                fontSize: 18,
+                              style: theme.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade600,
+                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -195,17 +232,17 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildRatingHeader(double rating, int total) {
+  Widget _buildRatingHeader(double rating, int total, ThemeData theme, bool isDark) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 8)),
+          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.04), blurRadius: 20, offset: const Offset(0, 8)),
         ],
-        border: Border.all(color: const Color(0xFFF0F4F8)),
+        border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : Border.all(color: const Color(0xFFF0F4F8)),
       ),
       child: Column(
         children: [
@@ -215,18 +252,16 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
             children: [
               Text(
                 rating > 0 ? rating.toStringAsFixed(1) : 'New',
-                style: const TextStyle(
-                  fontSize: 48,
+                style: theme.textTheme.displayMedium?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1D26),
                   height: 0.9,
                   letterSpacing: -1,
                 ),
               ),
               if (rating > 0)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 6, left: 4),
-                  child: Text('/ 5.0', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6, left: 4),
+                  child: Text('/ 5.0', style: TextStyle(color: isDark ? Colors.grey.shade600 : Colors.grey, fontWeight: FontWeight.bold)),
                 ),
             ],
           ),
@@ -245,13 +280,13 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFB),
+              color: isDark ? theme.scaffoldBackgroundColor : const Color(0xFFF8FAFB),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               'Based on $total review${total == 1 ? '' : 's'}',
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -270,6 +305,9 @@ class _ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    
     final rating = (review['rating'] as num?)?.toInt() ?? 0;
     final comment = review['comment'] as String? ?? 'No comment provided.';
     final dateStr = review['createdAt'] != null 
@@ -285,12 +323,12 @@ class _ReviewCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(isDark ? 0.04 : 0.02), blurRadius: 10, offset: const Offset(0, 4)),
         ],
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: isDark ? theme.dividerColor.withOpacity(0.1) : Colors.grey.shade100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,10 +340,10 @@ class _ReviewCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 18,
-                    backgroundColor: const Color(0xFF6AA9D8).withOpacity(0.1),
+                    backgroundColor: theme.primaryColor.withOpacity(0.1),
                     child: Text(
                       pName.isNotEmpty ? pName[0].toUpperCase() : 'P',
-                      style: const TextStyle(color: Color(0xFF6AA9D8), fontWeight: FontWeight.bold),
+                      style: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -314,7 +352,9 @@ class _ReviewCard extends StatelessWidget {
                     children: [
                       Text(
                         pName.isEmpty ? 'Anonymous' : pName,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF1A1D26)),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         dateStr,
@@ -327,7 +367,7 @@ class _ReviewCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
+                  color: Colors.amber.withOpacity(isDark ? 0.15 : 0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -336,7 +376,7 @@ class _ReviewCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       rating.toString(),
-                      style: TextStyle(color: Colors.amber.shade800, fontWeight: FontWeight.bold, fontSize: 12),
+                      style: TextStyle(color: Colors.amber.shade700, fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   ],
                 ),
@@ -347,7 +387,7 @@ class _ReviewCard extends StatelessWidget {
           Text(
             comment,
             style: TextStyle(
-              color: Colors.grey.shade700,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
               height: 1.5,
               fontSize: 14,
             ),
