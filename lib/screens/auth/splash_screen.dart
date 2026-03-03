@@ -1,4 +1,3 @@
-import 'package:doctoroncall/screens/auth/role_selection_screen.dart';
 import 'package:flutter/material.dart';
 
 import 'package:doctoroncall/screens/auth/login_screen.dart';
@@ -59,90 +58,95 @@ class _SplashScreenState extends State<SplashScreen> {
                     children: const [
                       _OnboardPage(
                         title: 'Welcome to\nDoctor On Call',
-                        subtitle: 'Find trusted doctors and\nbook appointments easily.',
+                        subtitle:
+                            'Find trusted doctors and\nbook appointments easily.',
                       ),
                       _OnboardPage(
                         title: 'Browse by Category',
-                        subtitle: 'Wheelchair, heart, nutrition\nand many more specialties.',
+                        subtitle:
+                            'Wheelchair, heart, nutrition\nand many more specialties.',
                       ),
                       _OnboardPage(
                         title: 'Book in Minutes',
-                        subtitle: 'Choose a doctor, pick a time\nand confirm your visit.',
+                        subtitle:
+                            'Choose a doctor, pick a time\nand confirm your visit.',
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
 
-         
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                3,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 5),
-                  width: _index == i ? 14 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _index == i ? Theme.of(context).primaryColor : Theme.of(context).dividerColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    3,
+                    (i) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 5),
+                      width: _index == i ? 14 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _index == i
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(
+                                context,
+                              ).dividerColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 60,
+                    child: ElevatedButton(
+                      onPressed: _next,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _blue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        _index == 2 ? 'Get Started' : 'Next',
+                        style: const TextStyle(
+                          fontFamily: 'PlayfairDisplay',
+                          fontSize: 20,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+              ],
+            ),
+            // Skip button
+            Positioned(
+              top: 20,
+              right: 20,
+              child: TextButton(
+                onPressed: _goToLogin,
+                child: Text(
+                  'Skip',
+                  style: TextStyle(
+                    color: _blue,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-
-            
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: SizedBox(
-                width: double.infinity,
-                height: 60,
-                child: ElevatedButton(
-                  onPressed: _next, 
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    _index == 2 ? 'Get Started' : 'Next',
-                    style: const TextStyle(
-                      fontFamily: 'PlayfairDisplay',
-                      fontSize: 20,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
           ],
         ),
-        // Skip button
-        Positioned(
-          top: 20,
-          right: 20,
-          child: TextButton(
-            onPressed: _goToLogin,
-            child: Text(
-              'Skip',
-              style: TextStyle(
-                color: _blue,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  ),
-);
+      ),
+    );
   }
 }
 
@@ -150,10 +154,7 @@ class _OnboardPage extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _OnboardPage({
-    required this.title,
-    required this.subtitle,
-  });
+  const _OnboardPage({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -163,13 +164,13 @@ class _OnboardPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Spacer(),
-          
+
           Center(
             child: Container(
               width: 180,
               height: 180,
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1), 
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(40),
               ),
               child: Icon(
@@ -194,7 +195,9 @@ class _OnboardPage extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'PlayfairDisplay',
               fontSize: 18,
-              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
+              color: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
             ),
           ),
           const Spacer(),

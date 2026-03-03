@@ -3,13 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:doctoroncall/features/auth/presentation/providers/auth_provider.dart';
 import 'package:doctoroncall/core/utils/image_utils.dart';
-import 'package:doctoroncall/screens/auth/splash_screen.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:doctoroncall/screens/shared/image_upload_screen.dart';
 import 'package:doctoroncall/core/theme/theme_service.dart';
 import 'package:doctoroncall/core/di/injection_container.dart';
 import 'package:doctoroncall/core/network/api_client.dart';
-import 'package:dio/dio.dart';
 import 'package:doctoroncall/core/providers/lock_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -72,8 +70,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           },
         },
       );
-    } catch (e) {
-      print('[SYNC] Theme sync error: $e');
+    } catch (_) {
+      // Removed sync error print
     }
   }
 
@@ -194,12 +192,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 gradient: LinearGradient(
                   colors: [
                     const Color(0xFF6AA9D8),
-                    const Color(0xFF6AA9D8).withOpacity(0.5),
+                    const Color(0xFF6AA9D8).withValues(alpha: 0.5),
                   ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF6AA9D8).withOpacity(0.3),
+                    color: const Color(0xFF6AA9D8).withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -249,8 +247,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
             color: role.toUpperCase() == 'DOCTOR'
-                ? Colors.blue.withOpacity(0.1)
-                : Colors.teal.withOpacity(0.1),
+                ? Colors.blue.withValues(alpha: 0.1)
+                : Colors.teal.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -375,7 +373,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -410,7 +408,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     TextInputType? keyboardType,
     int maxLines = 1,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: TextField(
@@ -457,7 +454,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           context,
         ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
       ),
-      activeColor: Theme.of(context).primaryColor,
+      activeTrackColor: Theme.of(context).primaryColor,
     );
   }
 
@@ -497,7 +494,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

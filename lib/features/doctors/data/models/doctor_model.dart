@@ -41,46 +41,31 @@ class DoctorModel extends Doctor {
   final int hiveTotalReviews;
 
   DoctorModel({
-    required String id,
-    required String userId,
-    required String firstName,
-    required String lastName,
-    String? image,
-    required String specialization,
-    required int experience,
-    required String bio,
-    required double fees,
-    String? hospital,
-    required double averageRating,
-    required int totalReviews,
-    List<ScheduleModel>? schedules,
-  })  : hiveId = id,
-        hiveUserId = userId,
-        hiveFirstName = firstName,
-        hiveLastName = lastName,
-        hiveImage = image,
-        hiveSpecialization = specialization,
-        hiveExperience = experience,
-        hiveBio = bio,
-        hiveFees = fees,
-        hiveHospital = hospital,
-        hiveAverageRating = averageRating,
-        hiveTotalReviews = totalReviews,
-        super(
-          id: id,
-          userId: userId,
-          firstName: firstName,
-          lastName: lastName,
-          image: image,
-          specialization: specialization,
-          experience: experience,
-          bio: bio,
-          fees: fees,
-          hospital: hospital,
-          averageRating: averageRating,
-          totalReviews: totalReviews,
-          schedules: schedules,
-        );
+    required super.id,
+    required super.userId,
+    required super.firstName,
+    required super.lastName,
+    super.image,
+    required super.specialization,
+    required super.experience,
+    required super.bio,
+    required super.fees,
+    super.hospital,
+    required super.averageRating,
+    required super.totalReviews,
+    super.schedules,
+  }) : hiveId = id,
+       hiveUserId = userId,
+       hiveFirstName = firstName,
+       hiveLastName = lastName,
+       hiveImage = image,
+       hiveSpecialization = specialization,
+       hiveExperience = experience,
+       hiveBio = bio,
+       hiveFees = fees,
+       hiveHospital = hospital,
+       hiveAverageRating = averageRating,
+       hiveTotalReviews = totalReviews;
 
   factory DoctorModel.fromJson(Map<String, dynamic> json) {
     final user = json['user'] ?? {};
@@ -99,8 +84,8 @@ class DoctorModel extends Doctor {
       totalReviews: json['totalReviews'] ?? 0,
       schedules: json['schedules'] != null
           ? (json['schedules'] as List)
-              .map((s) => ScheduleModel.fromJson(s))
-              .toList()
+                .map((s) => ScheduleModel.fromJson(s))
+                .toList()
           : null,
     );
   }
@@ -119,7 +104,9 @@ class DoctorModel extends Doctor {
       'hospital': hospital,
       'averageRating': averageRating,
       'totalReviews': totalReviews,
-      'schedules': schedules?.map((e) => (e as ScheduleModel).toJson()).toList(),
+      'schedules': schedules
+          ?.map((e) => (e as ScheduleModel).toJson())
+          .toList(),
     };
   }
 
@@ -139,8 +126,10 @@ class DoctorModel extends Doctor {
       totalReviews: map['totalReviews'] as int? ?? 0,
       schedules: map['schedules'] != null
           ? (map['schedules'] as List)
-              .map((s) => ScheduleModel.fromJson(Map<String, dynamic>.from(s)))
-              .toList()
+                .map(
+                  (s) => ScheduleModel.fromJson(Map<String, dynamic>.from(s)),
+                )
+                .toList()
           : null,
     );
   }

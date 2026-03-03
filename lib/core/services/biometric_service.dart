@@ -8,8 +8,8 @@ class BiometricService {
     try {
       final bool canAuthenticateWithBiometrics = await _auth.canCheckBiometrics;
       return canAuthenticateWithBiometrics;
-    } on PlatformException catch (e) {
-      print('[BIOMETRIC] Error checking availability: $e');
+    } on PlatformException catch (_) {
+      // Removed debug print
       return false;
     }
   }
@@ -17,8 +17,8 @@ class BiometricService {
   Future<List<BiometricType>> getAvailableBiometrics() async {
     try {
       return await _auth.getAvailableBiometrics();
-    } on PlatformException catch (e) {
-      print('[BIOMETRIC] Error getting available biometrics: $e');
+    } on PlatformException catch (_) {
+      // Removed debug print
       return <BiometricType>[];
     }
   }
@@ -29,8 +29,8 @@ class BiometricService {
         localizedReason: 'Please authenticate to unlock the app',
       );
       return didAuthenticate;
-    } on PlatformException catch (e) {
-      print('[BIOMETRIC] Error during authentication: $e');
+    } on PlatformException catch (_) {
+      // Removed debug print
       return false;
     }
   }

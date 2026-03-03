@@ -34,7 +34,7 @@ class PendingRequestsScreen extends ConsumerWidget {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -146,7 +146,7 @@ class _PendingCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -159,7 +159,7 @@ class _PendingCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: const Color(0xFF6AA9D8).withOpacity(0.1),
+                backgroundColor: const Color(0xFF6AA9D8).withValues(alpha: 0.1),
                 child: const Icon(
                   Icons.person,
                   color: Color(0xFF4889A8),
@@ -249,7 +249,9 @@ class _PendingCard extends StatelessWidget {
                       backgroundColor: const Color(0xFF4889A8),
                       foregroundColor: Colors.white,
                       elevation: 4,
-                      shadowColor: const Color(0xFF4889A8).withOpacity(0.3),
+                      shadowColor: const Color(
+                        0xFF4889A8,
+                      ).withValues(alpha: 0.3),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
                       ),
@@ -299,7 +301,7 @@ class _InfoChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: iconColor.withOpacity(0.8),
+              color: iconColor.withValues(alpha: 0.8),
               fontSize: 11,
               fontWeight: FontWeight.bold,
             ),

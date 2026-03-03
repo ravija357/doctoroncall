@@ -53,110 +53,110 @@ class _DoctorMainScreenState extends ConsumerState<DoctorMainScreen> {
     });
 
     return Scaffold(
-        extendBody: true,
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: isDark
-                  ? [
-                      const Color(0xFF1A237E).withOpacity(0.6),
-                      Theme.of(context).scaffoldBackgroundColor,
-                    ]
-                  : [
-                      const Color(0xFF4889A8).withOpacity(0.8),
-                      const Color(0xFFF8FAFC),
-                    ],
-              stops: const [0.0, 0.4],
-            ),
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: Stack(
-              children: [
-                IndexedStack(
-                  index: _selectedIndex,
-                  children: [
-                    const DoctorDashboardScreen(),
-                    AppointmentListScreen(
-                      isFromBottomNav: true,
-                      onBackPressed: () => _onItemTapped(0),
-                    ),
-                    MessageListScreen(onBackPressed: () => _onItemTapped(0)),
+      extendBody: true,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [
+                    const Color(0xFF1A237E).withOpacity(0.6),
+                    Theme.of(context).scaffoldBackgroundColor,
+                  ]
+                : [
+                    const Color(0xFF4889A8).withOpacity(0.8),
+                    const Color(0xFFF8FAFC),
                   ],
-                ),
-                // Floating Premium Bottom Navigation Bar
-                Positioned(
-                  left: 20,
-                  right: 20,
-                  bottom: 25,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        height: 70,
-                        decoration: BoxDecoration(
+            stops: const [0.0, 0.4],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Stack(
+            children: [
+              IndexedStack(
+                index: _selectedIndex,
+                children: [
+                  const DoctorDashboardScreen(),
+                  AppointmentListScreen(
+                    isFromBottomNav: true,
+                    onBackPressed: () => _onItemTapped(0),
+                  ),
+                  MessageListScreen(onBackPressed: () => _onItemTapped(0)),
+                ],
+              ),
+              // Floating Premium Bottom Navigation Bar
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 25,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Theme.of(context).cardColor.withOpacity(0.9)
+                            : Colors.white.withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
                           color: isDark
-                              ? Theme.of(context).cardColor.withOpacity(0.9)
-                              : Colors.white.withOpacity(0.85),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.white.withOpacity(0.08)
-                                : Colors.white.withOpacity(0.3),
-                            width: 1.5,
+                              ? Colors.white.withOpacity(0.08)
+                              : Colors.white.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(
+                              isDark ? 0.3 : 0.08,
+                            ),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(
-                                isDark ? 0.3 : 0.08,
-                              ),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _NavItem(
+                              icon: Icons.dashboard_rounded,
+                              activeIcon: Icons.dashboard_rounded,
+                              index: 0,
+                              selectedIndex: _selectedIndex,
+                              onTap: () => _onItemTapped(0),
+                            ),
+                            _NavItem(
+                              icon: Icons.event_note_rounded,
+                              activeIcon: Icons.event_note_rounded,
+                              index: 1,
+                              selectedIndex: _selectedIndex,
+                              onTap: () => _onItemTapped(1),
+                            ),
+                            _NavItem(
+                              icon: Icons.forum_outlined,
+                              activeIcon: Icons.forum_rounded,
+                              index: 2,
+                              selectedIndex: _selectedIndex,
+                              badgeCount: _unreadMessageCount,
+                              onTap: () => _onItemTapped(2),
                             ),
                           ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _NavItem(
-                                icon: Icons.dashboard_rounded,
-                                activeIcon: Icons.dashboard_rounded,
-                                index: 0,
-                                selectedIndex: _selectedIndex,
-                                onTap: () => _onItemTapped(0),
-                              ),
-                              _NavItem(
-                                icon: Icons.event_note_rounded,
-                                activeIcon: Icons.event_note_rounded,
-                                index: 1,
-                                selectedIndex: _selectedIndex,
-                                onTap: () => _onItemTapped(1),
-                              ),
-                              _NavItem(
-                                icon: Icons.forum_outlined,
-                                activeIcon: Icons.forum_rounded,
-                                index: 2,
-                                selectedIndex: _selectedIndex,
-                                badgeCount: _unreadMessageCount,
-                                onTap: () => _onItemTapped(2),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 }
 
@@ -200,7 +200,7 @@ class _NavItem extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isActive
-                      ? primaryColor.withOpacity(0.1)
+                      ? primaryColor.withValues(alpha: 0.1)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -233,7 +233,7 @@ class _NavItem extends StatelessWidget {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.red.withOpacity(0.2),
+                            color: Colors.red.withValues(alpha: 0.2),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),

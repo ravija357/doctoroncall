@@ -15,12 +15,12 @@ class MessageListScreen extends ConsumerStatefulWidget {
 }
 
 class _MessageListScreenState extends ConsumerState<MessageListScreen> {
-  bool _isConnected = false;
-
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(chatNotifierProvider.notifier).loadContacts());
+    Future.microtask(
+      () => ref.read(chatNotifierProvider.notifier).loadContacts(),
+    );
   }
 
   @override
@@ -56,12 +56,14 @@ class _MessageListScreenState extends ConsumerState<MessageListScreen> {
                     decoration: BoxDecoration(
                       color: isDark
                           ? theme.cardColor
-                          : Colors.black.withOpacity(0.05),
+                          : Colors.black.withValues(alpha: 0.05),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.chevron_left,
-                      color: isDark ? theme.iconTheme.color : theme.primaryColor,
+                      color: isDark
+                          ? theme.iconTheme.color
+                          : theme.primaryColor,
                       size: 28,
                     ),
                   ),
@@ -116,10 +118,10 @@ class _MessageListScreenState extends ConsumerState<MessageListScreen> {
             return ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 10),
               itemCount: contacts.length,
-              separatorBuilder: (_, __) => Divider(
+              separatorBuilder: (context, index) => Divider(
                 height: 1,
                 indent: 88,
-                color: theme.dividerColor.withOpacity(0.05),
+                color: theme.dividerColor.withValues(alpha: 0.05),
               ),
               itemBuilder: (context, index) {
                 final contact = contacts[index];
@@ -157,8 +159,8 @@ class _MessageListScreenState extends ConsumerState<MessageListScreen> {
                             color: theme.cardColor,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(
-                                  isDark ? 0.2 : 0.04,
+                                color: Colors.black.withValues(
+                                  alpha: isDark ? 0.2 : 0.04,
                                 ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
@@ -166,7 +168,7 @@ class _MessageListScreenState extends ConsumerState<MessageListScreen> {
                             ],
                             border: Border.all(
                               color: isDark
-                                  ? theme.dividerColor.withOpacity(0.1)
+                                  ? theme.dividerColor.withValues(alpha: 0.1)
                                   : Colors.grey.shade100,
                               width: 2,
                             ),
@@ -179,13 +181,14 @@ class _MessageListScreenState extends ConsumerState<MessageListScreen> {
                                       contact.image,
                                     )!,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Icon(
-                                      Icons.person,
-                                      color: isDark
-                                          ? Colors.grey.shade700
-                                          : Colors.grey.shade300,
-                                      size: 32,
-                                    ),
+                                    errorBuilder:
+                                        (context, error, stackTrace) => Icon(
+                                          Icons.person,
+                                          color: isDark
+                                              ? Colors.grey.shade700
+                                              : Colors.grey.shade300,
+                                          size: 32,
+                                        ),
                                   )
                                 : Icon(
                                     Icons.person,
@@ -265,7 +268,7 @@ class _MessageListScreenState extends ConsumerState<MessageListScreen> {
                                         boxShadow: [
                                           BoxShadow(
                                             color: theme.primaryColor
-                                                .withOpacity(0.3),
+                                                .withValues(alpha: 0.3),
                                             blurRadius: 4,
                                           ),
                                         ],

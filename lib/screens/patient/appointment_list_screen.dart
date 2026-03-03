@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:doctoroncall/features/appointments/domain/entities/appointment.dart';
-import 'package:doctoroncall/features/appointments/domain/entities/appointment.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
@@ -12,10 +11,15 @@ import 'package:doctoroncall/features/appointments/presentation/bloc/appointment
 class AppointmentListScreen extends ConsumerStatefulWidget {
   final bool isFromBottomNav;
   final VoidCallback? onBackPressed;
-  const AppointmentListScreen({super.key, this.isFromBottomNav = false, this.onBackPressed});
+  const AppointmentListScreen({
+    super.key,
+    this.isFromBottomNav = false,
+    this.onBackPressed,
+  });
 
   @override
-  ConsumerState<AppointmentListScreen> createState() => _AppointmentListScreenState();
+  ConsumerState<AppointmentListScreen> createState() =>
+      _AppointmentListScreenState();
 }
 
 class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
@@ -109,7 +113,7 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
                           colors: [
                             Colors.transparent,
                             isDark
-                                ? theme.dividerColor.withOpacity(0.1)
+                                ? theme.dividerColor.withValues(alpha: 0.1)
                                 : Colors.grey.shade200,
                             Colors.transparent,
                           ],
@@ -230,7 +234,7 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -420,7 +424,7 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -591,7 +595,7 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFE53935).withOpacity(0.3),
+                  color: const Color(0xFFE53935).withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -638,7 +642,7 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFE53935).withOpacity(0.3),
+                      color: const Color(0xFFE53935).withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -672,9 +676,9 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -768,10 +772,9 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
                 child: GestureDetector(
                   onTap: () {
                     Navigator.pop(ctx);
-                    ref.read(appointmentNotifierProvider.notifier).cancelAppointment(
-                          appointmentId,
-                          userId,
-                        );
+                    ref
+                        .read(appointmentNotifierProvider.notifier)
+                        .cancelAppointment(appointmentId, userId);
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -782,7 +785,7 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFE53935).withOpacity(0.3),
+                          color: const Color(0xFFE53935).withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),

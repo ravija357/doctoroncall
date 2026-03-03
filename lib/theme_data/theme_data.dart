@@ -3,23 +3,33 @@ import 'package:flutter/material.dart';
 ThemeData getApplicationTheme({bool isDark = false}) {
   // --- Premium Color Palette ---
   // Using a sophisticated Slate & Indigo palette for a modern clinical feel.
-  final primaryColor = isDark ? const Color(0xFF60A5FA) : const Color(0xFF70c0fa);
-  final secondaryColor = isDark ? const Color(0xFFC084FC) : const Color(0xFF7C3AED);
-  final accentColor = isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488);
-  
-  final backgroundColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+  final primaryColor = isDark
+      ? const Color(0xFF60A5FA)
+      : const Color(0xFF70c0fa);
+  final secondaryColor = isDark
+      ? const Color(0xFFC084FC)
+      : const Color(0xFF7C3AED);
+  final accentColor = isDark
+      ? const Color(0xFF2DD4BF)
+      : const Color(0xFF0D9488);
+
+  final backgroundColor = isDark
+      ? const Color(0xFF0F172A)
+      : const Color(0xFFF8FAFC);
   final surfaceColor = isDark ? const Color(0xFF1E293B) : Colors.white;
   final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-  
+
   final textPrimary = isDark ? Colors.white : const Color(0xFF1E293B);
-  final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+  final textSecondary = isDark
+      ? const Color(0xFF94A3B8)
+      : const Color(0xFF64748B);
 
   return ThemeData(
     useMaterial3: true,
     brightness: isDark ? Brightness.dark : Brightness.light,
     primaryColor: primaryColor,
     secondaryHeaderColor: secondaryColor,
-    
+
     colorScheme: ColorScheme.fromSeed(
       seedColor: primaryColor,
       brightness: isDark ? Brightness.dark : Brightness.light,
@@ -27,11 +37,11 @@ ThemeData getApplicationTheme({bool isDark = false}) {
       secondary: secondaryColor,
       tertiary: accentColor,
       surface: surfaceColor,
-      background: backgroundColor,
+      surfaceContainerHighest: isDark
+          ? const Color(0xFF334155)
+          : const Color(0xFFF1F5F9),
       onSurface: textPrimary,
-      onBackground: textPrimary,
       onPrimary: Colors.white,
-      surfaceVariant: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
     ),
 
     fontFamily: "Roboto",
@@ -55,16 +65,16 @@ ThemeData getApplicationTheme({bool isDark = false}) {
 
     textTheme: TextTheme(
       displayLarge: TextStyle(
-        fontSize: 32, 
-        fontWeight: FontWeight.w800, 
-        color: textPrimary, 
+        fontSize: 32,
+        fontWeight: FontWeight.w800,
+        color: textPrimary,
         fontFamily: 'Roboto',
         letterSpacing: -1.0,
       ),
       displayMedium: TextStyle(
-        fontSize: 28, 
-        fontWeight: FontWeight.w700, 
-        color: textPrimary, 
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
         fontFamily: 'Roboto',
         letterSpacing: -0.5,
       ),
@@ -75,26 +85,18 @@ ThemeData getApplicationTheme({bool isDark = false}) {
         letterSpacing: -0.5,
       ),
       titleLarge: TextStyle(
-        fontSize: 20, 
-        fontWeight: FontWeight.w700, 
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
         color: textPrimary,
         letterSpacing: -0.5,
       ),
       titleMedium: TextStyle(
-        fontSize: 16, 
-        fontWeight: FontWeight.w600, 
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
         color: textPrimary,
       ),
-      bodyLarge: TextStyle(
-        fontSize: 16, 
-        color: textPrimary,
-        height: 1.5,
-      ),
-      bodyMedium: TextStyle(
-        fontSize: 14, 
-        color: textSecondary,
-        height: 1.5,
-      ),
+      bodyLarge: TextStyle(fontSize: 16, color: textPrimary, height: 1.5),
+      bodyMedium: TextStyle(fontSize: 14, color: textSecondary, height: 1.5),
       labelLarge: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,
@@ -113,22 +115,21 @@ ThemeData getApplicationTheme({bool isDark = false}) {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 0, // Solid look is more modern
-        shadowColor: primaryColor.withOpacity(0.3),
+        shadowColor: primaryColor.withValues(alpha: 0.3),
       ),
     ),
 
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: primaryColor,
-        side: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: primaryColor.withValues(alpha: 0.5),
+          width: 1.5,
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     ),
 
@@ -139,7 +140,9 @@ ThemeData getApplicationTheme({bool isDark = false}) {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
         side: BorderSide(
-          color: isDark ? const Color(0xFF334155).withOpacity(0.5) : const Color(0xFFE2E8F0),
+          color: isDark
+              ? const Color(0xFF334155).withValues(alpha: 0.5)
+              : const Color(0xFFE2E8F0),
           width: 1,
         ),
       ),
@@ -149,7 +152,7 @@ ThemeData getApplicationTheme({bool isDark = false}) {
       filled: true,
       fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16), 
+        borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
@@ -164,7 +167,7 @@ ThemeData getApplicationTheme({bool isDark = false}) {
         borderSide: BorderSide(color: primaryColor, width: 2),
       ),
       contentPadding: const EdgeInsets.all(20),
-      hintStyle: TextStyle(color: textSecondary.withOpacity(0.5)),
+      hintStyle: TextStyle(color: textSecondary.withValues(alpha: 0.5)),
       prefixIconColor: textSecondary,
       suffixIconColor: textSecondary,
     ),
@@ -175,9 +178,6 @@ ThemeData getApplicationTheme({bool isDark = false}) {
       space: 1,
     ),
 
-    iconTheme: IconThemeData(
-      color: primaryColor,
-      size: 24,
-    ),
+    iconTheme: IconThemeData(color: primaryColor, size: 24),
   );
 }

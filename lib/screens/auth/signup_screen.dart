@@ -36,7 +36,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (firstName.isEmpty || lastName.isEmpty || email.isEmpty || password.isEmpty) {
+    if (firstName.isEmpty ||
+        lastName.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields')),
@@ -44,7 +47,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       return;
     }
 
-    ref.read(authProvider.notifier).signup(
+    ref
+        .read(authProvider.notifier)
+        .signup(
           firstName,
           lastName,
           email,
@@ -56,7 +61,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final size = MediaQuery.of(context).size;
     final isDark = theme.brightness == Brightness.dark;
 
     ref.listen<AuthState>(authProvider, (previous, next) {
@@ -74,9 +78,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         );
       } else if (next is AuthError) {
         final state = next;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(state.message)));
       }
     });
 
@@ -87,123 +91,134 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       body: authState is AuthLoading
           ? Center(child: CircularProgressIndicator(color: theme.primaryColor))
           : Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDark 
-                    ? [const Color(0xFF1A1F24), const Color(0xFF121212)]
-                    : [const Color(0xFFF0F4F8), Colors.white],
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [const Color(0xFF1A1F24), const Color(0xFF121212)]
+                      : [const Color(0xFFF0F4F8), Colors.white],
+                ),
               ),
-            ),
-            child: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    IconButton(
-                      icon: Icon(Icons.arrow_back_ios, color: theme.primaryColor),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Create Account',
-                      style: theme.textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: theme.primaryColor,
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 30,
+                    vertical: 20,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      IconButton(
+                        icon: Icon(
+                          Icons.arrow_back_ios,
+                          color: theme.primaryColor,
+                        ),
+                        onPressed: () => Navigator.pop(context),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Sign up as a ${_isDoctor ? "Doctor" : "Patient"}',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.grey.shade600,
+                      const SizedBox(height: 20),
+                      Text(
+                        'Create Account',
+                        style: theme.textTheme.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: theme.primaryColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 40),
-                    _ModernTextField(
-                      controller: _firstNameController,
-                      label: 'First Name',
-                      icon: Icons.person_outline,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 20),
-                    _ModernTextField(
-                      controller: _lastNameController,
-                      label: 'Last Name',
-                      icon: Icons.person_outline,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 20),
-                    _ModernTextField(
-                      controller: _emailController,
-                      label: 'Email',
-                      icon: Icons.email_outlined,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 20),
-                    _ModernTextField(
-                      controller: _passwordController,
-                      label: 'Password',
-                      icon: Icons.lock_outline,
-                      isDark: isDark,
-                      isPassword: true,
-                    ),
-                    const SizedBox(height: 40),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 60,
-                      child: ElevatedButton(
-                        onPressed: _onSignUpPressed,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.primaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Sign up as a ${_isDoctor ? "Doctor" : "Patient"}',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      _ModernTextField(
+                        controller: _firstNameController,
+                        label: 'First Name',
+                        icon: Icons.person_outline,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 20),
+                      _ModernTextField(
+                        controller: _lastNameController,
+                        label: 'Last Name',
+                        icon: Icons.person_outline,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 20),
+                      _ModernTextField(
+                        controller: _emailController,
+                        label: 'Email',
+                        icon: Icons.email_outlined,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 20),
+                      _ModernTextField(
+                        controller: _passwordController,
+                        label: 'Password',
+                        icon: Icons.lock_outline,
+                        isDark: isDark,
+                        isPassword: true,
+                      ),
+                      const SizedBox(height: 40),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 60,
+                        child: ElevatedButton(
+                          onPressed: _onSignUpPressed,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.primaryColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            elevation: 5,
+                            shadowColor: theme.primaryColor.withValues(
+                              alpha: 0.4,
+                            ),
                           ),
-                          elevation: 5,
-                          shadowColor: theme.primaryColor.withOpacity(0.4),
-                        ),
-                        child: const Text(
-                          'Sign Up',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Already have an account? ',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                        ),
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Text(
-                            'Login',
+                          child: const Text(
+                            'Sign Up',
                             style: TextStyle(
-                              color: theme.primaryColor,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 40),
-                  ],
+                      ),
+                      const SizedBox(height: 30),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Already have an account? ',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Text(
+                              'Login',
+                              style: TextStyle(
+                                color: theme.primaryColor,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
     );
   }
 }
@@ -231,7 +246,7 @@ class _ModernTextField extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -246,7 +261,10 @@ class _ModernTextField extends StatelessWidget {
           labelStyle: TextStyle(color: Colors.grey.shade500),
           prefixIcon: Icon(icon, color: Theme.of(context).primaryColor),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 15,
+          ),
         ),
       ),
     );

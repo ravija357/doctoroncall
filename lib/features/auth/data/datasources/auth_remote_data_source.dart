@@ -4,7 +4,6 @@ import '../models/user_model.dart';
 import 'package:doctoroncall/core/error/server_exception.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../../../core/constants/hive_boxes.dart';
-import '../../../../core/constants/api_constants.dart';
 
 class AuthRemoteDataSource {
   final ApiClient apiClient;
@@ -23,12 +22,14 @@ class AuthRemoteDataSource {
           'role': user.role,
         },
       );
-      
+
       if (response.statusCode != 201) {
         throw ServerException(message: 'Failed to sign up');
       }
     } on DioException catch (e) {
-      throw ServerException(message: e.response?.data['message'] ?? e.message ?? 'Signup failed');
+      throw ServerException(
+        message: e.response?.data['message'] ?? e.message ?? 'Signup failed',
+      );
     }
   }
 
@@ -36,16 +37,13 @@ class AuthRemoteDataSource {
     try {
       final response = await apiClient.dio.post(
         '/auth/login',
-        data: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
 
       if (response.statusCode == 200) {
         final data = response.data;
         final token = data['token'];
-        
+
         // Save the JWT token
         await apiClient.secureStorage.write(key: 'jwt_token', value: token);
         // Save the user ID for socket connections
@@ -65,7 +63,48 @@ class AuthRemoteDataSource {
         throw ServerException(message: 'Failed to login');
       }
     } on DioException catch (e) {
-      throw ServerException(message: e.response?.data['message'] ?? e.message ?? 'Login failed');
+      throw ServerException(
+        message: e.response?.data['message'] ?? e.message ?? 'Login failed',
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<UserModel> googleLogin(String idToken) async {
+    try {
+      final response = await apiClient.dio.post(
+        '/auth/google',
+        data: {'idToken': idToken},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final token = data['token'];
+
+        // Save the JWT token
+        await apiClient.secureStorage.write(key: 'jwt_token', value: token);
+        // Save the user ID for socket connections
+        final user = data['user'];
+        final userId = user['id'];
+        await apiClient.secureStorage.write(key: 'user_id', value: userId);
+
+        // Build the UserModel
+        final userModel = UserModel.fromMap(data['user']);
+
+        // Cache full UserModel in Hive
+        final box = Hive.box(HiveBoxes.users);
+        await box.put('currentUser', userModel.toMap());
+
+        return userModel;
+      } else {
+        throw ServerException(message: 'Google login failed');
+      }
+    } on DioException catch (e) {
+      throw ServerException(
+        message:
+            e.response?.data['message'] ?? e.message ?? 'Google login failed',
+      );
     } catch (e) {
       rethrow;
     }
@@ -115,7 +154,7 @@ class AuthRemoteDataSource {
         // Update cache
         final box = Hive.box(HiveBoxes.users);
         await box.put('currentUser', userModel.toMap());
-        
+
         // Also update loose fields for compatibility
         await box.put('firstName', userModel.firstName);
         await box.put('lastName', userModel.lastName);
@@ -127,7 +166,12 @@ class AuthRemoteDataSource {
         throw ServerException(message: 'Failed to fetch profile');
       }
     } on DioException catch (e) {
-      throw ServerException(message: e.response?.data['message'] ?? e.message ?? 'Failed to fetch profile');
+      throw ServerException(
+        message:
+            e.response?.data['message'] ??
+            e.message ??
+            'Failed to fetch profile',
+      );
     } catch (e) {
       rethrow;
     }
@@ -147,7 +191,7 @@ class AuthRemoteDataSource {
         // Update cache
         final box = Hive.box(HiveBoxes.users);
         await box.put('currentUser', userModel.toMap());
-        
+
         // Also update loose fields for compatibility
         await box.put('firstName', userModel.firstName);
         await box.put('lastName', userModel.lastName);
@@ -159,7 +203,12 @@ class AuthRemoteDataSource {
         throw ServerException(message: 'Failed to update profile');
       }
     } on DioException catch (e) {
-      throw ServerException(message: e.response?.data['message'] ?? e.message ?? 'Failed to update profile');
+      throw ServerException(
+        message:
+            e.response?.data['message'] ??
+            e.message ??
+            'Failed to update profile',
+      );
     } catch (e) {
       rethrow;
     }

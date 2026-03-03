@@ -21,9 +21,12 @@ class MyPatientsScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: isDark 
-              ? [Theme.of(context).scaffoldBackgroundColor, Theme.of(context).scaffoldBackgroundColor]
-              : [primaryColor, const Color(0xFFF8FAFC)],
+            colors: isDark
+                ? [
+                    Theme.of(context).scaffoldBackgroundColor,
+                    Theme.of(context).scaffoldBackgroundColor,
+                  ]
+                : [primaryColor, const Color(0xFFF8FAFC)],
             stops: const [0.0, 0.3],
           ),
         ),
@@ -41,10 +44,17 @@ class MyPatientsScreen extends ConsumerWidget {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isDark ? Theme.of(context).cardColor : Colors.white.withOpacity(0.2),
+                          color: isDark
+                              ? Theme.of(context).cardColor
+                              : Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.chevron_left, color: isDark ? Theme.of(context).iconTheme.color : Colors.white),
+                        child: Icon(
+                          Icons.chevron_left,
+                          color: isDark
+                              ? Theme.of(context).iconTheme.color
+                              : Colors.white,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -53,7 +63,9 @@ class MyPatientsScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: isDark ? Theme.of(context).textTheme.titleLarge?.color : Colors.white,
+                        color: isDark
+                            ? Theme.of(context).textTheme.titleLarge?.color
+                            : Colors.white,
                       ),
                     ),
                   ],
@@ -65,33 +77,43 @@ class MyPatientsScreen extends ConsumerWidget {
                 child: () {
                   final state = ref.watch(appointmentNotifierProvider);
                   if (state is AppointmentLoading) {
-                      return Center(child: CircularProgressIndicator(color: isDark ? Theme.of(context).primaryColor : primaryColor));
-                    }
-                    if (state is DoctorAppointmentsLoaded) {
-                      final patients = _groupPatients(state.appointments);
-                      
-                      if (patients.isEmpty) {
-                        return _buildEmptyState(context);
-                      }
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: isDark
+                            ? Theme.of(context).primaryColor
+                            : primaryColor,
+                      ),
+                    );
+                  }
+                  if (state is DoctorAppointmentsLoaded) {
+                    final patients = _groupPatients(state.appointments);
 
-                      return ListView.separated(
-                        padding: const EdgeInsets.all(20),
-                        itemCount: patients.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 16),
-                        itemBuilder: (context, index) {
-                          final patient = patients[index];
-                          return _PatientCard(
-                            patient: patient,
-                            onTap: () => _showPatientHistory(context, patient, state.appointments),
-                          );
-                        },
-                      );
+                    if (patients.isEmpty) {
+                      return _buildEmptyState(context);
                     }
-                    return _buildEmptyState(context);
-                  }(),
-                ),
-              ],
-            ),
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: patients.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final patient = patients[index];
+                        return _PatientCard(
+                          patient: patient,
+                          onTap: () => _showPatientHistory(
+                            context,
+                            patient,
+                            state.appointments,
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  return _buildEmptyState(context);
+                }(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -115,7 +137,9 @@ class MyPatientsScreen extends ConsumerWidget {
           id: pid,
           name: existing.name,
           totalVisits: existing.totalVisits + 1,
-          lastVisit: app.dateTime.isAfter(existing.lastVisit) ? app.dateTime : existing.lastVisit,
+          lastVisit: app.dateTime.isAfter(existing.lastVisit)
+              ? app.dateTime
+              : existing.lastVisit,
         );
       }
     }
@@ -124,8 +148,14 @@ class MyPatientsScreen extends ConsumerWidget {
       ..sort((a, b) => b.lastVisit.compareTo(a.lastVisit));
   }
 
-  void _showPatientHistory(BuildContext context, _PatientSummary patient, List<Appointment> allAppointments) {
-    final history = allAppointments.where((a) => a.patientId == patient.id).toList();
+  void _showPatientHistory(
+    BuildContext context,
+    _PatientSummary patient,
+    List<Appointment> allAppointments,
+  ) {
+    final history = allAppointments
+        .where((a) => a.patientId == patient.id)
+        .toList();
 
     Navigator.push(
       context,
@@ -145,7 +175,11 @@ class MyPatientsScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline_rounded, size: 80, color: Colors.grey.shade300),
+          Icon(
+            Icons.people_outline_rounded,
+            size: 80,
+            color: Colors.grey.shade300,
+          ),
           const SizedBox(height: 16),
           Text(
             'No patients rostered',
@@ -200,10 +234,14 @@ class _PatientCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
-          border: isDark ? Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)) : null,
+          border: isDark
+              ? Border.all(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                )
+              : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -213,10 +251,16 @@ class _PatientCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.15),
+              backgroundColor: Theme.of(
+                context,
+              ).primaryColor.withValues(alpha: 0.15),
               child: Text(
                 patient.name.isNotEmpty ? patient.name[0].toUpperCase() : 'P',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor, fontSize: 20),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                  fontSize: 20,
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -235,11 +279,19 @@ class _PatientCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.history_rounded, size: 14, color: Colors.grey.shade500),
+                      Icon(
+                        Icons.history_rounded,
+                        size: 14,
+                        color: Colors.grey.shade500,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Last visit: ${DateFormat('MMM d, y').format(patient.lastVisit)}',
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -252,18 +304,33 @@ class _PatientCard extends StatelessWidget {
                 color: Theme.of(context).primaryColor,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
-                  BoxShadow(color: Theme.of(context).primaryColor.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
+                  BoxShadow(
+                    color: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
               ),
               child: Column(
                 children: [
                   Text(
                     '${patient.totalVisits}',
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, height: 1),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      height: 1,
+                    ),
                   ),
                   const Text(
                     'Visits',
-                    style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),

@@ -104,7 +104,9 @@ class _PatientMainScreenState extends ConsumerState<PatientMainScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Theme.of(context).primaryColor.withOpacity(isDark ? 0.3 : 0.8),
+              Theme.of(
+                context,
+              ).primaryColor.withValues(alpha: isDark ? 0.3 : 0.8),
               Theme.of(context).scaffoldBackgroundColor,
             ],
             stops: const [0.0, 0.4],
@@ -129,13 +131,13 @@ class _PatientMainScreenState extends ConsumerState<PatientMainScreen> {
                       height: 70,
                       decoration: BoxDecoration(
                         color: isDark
-                            ? Theme.of(context).cardColor.withOpacity(0.9)
-                            : Colors.white.withOpacity(0.85),
+                            ? Theme.of(context).cardColor.withValues(alpha: 0.9)
+                            : Colors.white.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(30),
                         border: Border.all(
                           color: isDark
-                              ? Colors.white.withOpacity(0.08)
-                              : Colors.white.withOpacity(0.3),
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.white.withValues(alpha: 0.3),
                           width: 1.5,
                         ),
                         boxShadow: [
@@ -229,7 +231,7 @@ class _NavItem extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isActive
-                      ? primaryColor.withOpacity(0.1)
+                      ? primaryColor.withValues(alpha: 0.1)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -260,7 +262,7 @@ class _NavItem extends StatelessWidget {
                         border: Border.all(color: Colors.white, width: 1.5),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.red.withOpacity(0.4),
+                            color: Colors.red.withValues(alpha: 0.4),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -458,7 +460,7 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
               _QuickActionCard(
                 icon: Icons.history_edu_rounded,
                 label: 'Records',
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 iconColor: Theme.of(context).primaryColor,
                 onTap: () => Navigator.push(
                   context,
@@ -471,7 +473,7 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
               _QuickActionCard(
                 icon: Icons.medication_liquid_rounded,
                 label: 'Prescript',
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 iconColor: Theme.of(context).primaryColor,
                 onTap: () => Navigator.push(
                   context,
@@ -484,7 +486,7 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
               _QuickActionCard(
                 icon: Icons.calendar_month_rounded,
                 label: 'Schedules',
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 iconColor: Theme.of(context).primaryColor,
                 onTap: () {
                   setState(() {
@@ -555,20 +557,20 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
                       boxShadow: [
                         if (isSelected)
                           BoxShadow(
-                            color: theme.primaryColor.withOpacity(0.4),
+                            color: theme.primaryColor.withValues(alpha: 0.4),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           )
                         else if (!isDark)
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
+                            color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
                       ],
                       border: isDark && !isSelected
                           ? Border.all(
-                              color: theme.dividerColor.withOpacity(0.1),
+                              color: theme.dividerColor.withValues(alpha: 0.1),
                             )
                           : null,
                     ),
@@ -581,8 +583,10 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
                             color: isDark
                                 ? theme.scaffoldBackgroundColor
                                 : (isSelected
-                                      ? Colors.white.withOpacity(0.2)
-                                      : theme.primaryColor.withOpacity(0.1)),
+                                      ? Colors.white.withValues(alpha: 0.2)
+                                      : theme.primaryColor.withValues(
+                                          alpha: 0.1,
+                                        )),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -712,12 +716,12 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                         width: 2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -759,10 +763,11 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
 
                 final hour = DateTime.now().hour;
                 String greeting = 'Good Morning,';
-                if (hour >= 12 && hour < 17)
+                if (hour >= 12 && hour < 17) {
                   greeting = 'Good Afternoon,';
-                else if (hour >= 17 || hour < 4)
+                } else if (hour >= 17 || hour < 4) {
                   greeting = 'Good Evening,';
+                }
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -770,7 +775,7 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
                     Text(
                       greeting,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.5,
@@ -813,10 +818,10 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                   ),
@@ -838,7 +843,7 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
                         border: Border.all(color: theme.primaryColor, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.red.withOpacity(0.4),
+                            color: Colors.red.withValues(alpha: 0.4),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -873,17 +878,17 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
     return Container(
       decoration: BoxDecoration(
         color: isDark
-            ? theme.cardColor.withOpacity(0.8)
-            : Colors.white.withOpacity(0.9),
+            ? theme.cardColor.withValues(alpha: 0.8)
+            : Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.1) : Colors.white,
+          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
           width: 1.5,
         ),
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -938,7 +943,7 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.05),
+                color: theme.primaryColor.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -949,7 +954,7 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
                           as IconData)
                     : Icons.search_off_rounded,
                 size: 48,
-                color: theme.primaryColor.withOpacity(0.5),
+                color: theme.primaryColor.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(height: 16),
@@ -993,12 +998,12 @@ class _DoctorCard extends ConsumerWidget {
           color: theme.cardColor,
           borderRadius: BorderRadius.circular(28),
           border: isDark
-              ? Border.all(color: theme.dividerColor.withOpacity(0.1))
+              ? Border.all(color: theme.dividerColor.withValues(alpha: 0.1))
               : null,
           boxShadow: [
             if (!isDark)
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
               ),
@@ -1024,7 +1029,7 @@ class _DoctorCard extends ConsumerWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.primaryColor.withOpacity(0.1),
+                      color: theme.primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -1072,7 +1077,7 @@ class _DoctorCard extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isDark
-                            ? theme.dividerColor.withOpacity(0.1)
+                            ? theme.dividerColor.withValues(alpha: 0.1)
                             : Colors.grey.shade100,
                       ),
                     ),
@@ -1128,7 +1133,7 @@ class _DoctorCard extends ConsumerWidget {
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? theme.scaffoldBackgroundColor.withOpacity(0.5)
+                      ? theme.scaffoldBackgroundColor.withValues(alpha: 0.5)
                       : Colors.grey.shade50,
                   shape: BoxShape.circle,
                 ),
@@ -1172,12 +1177,12 @@ class _UpcomingAppointmentCard extends ConsumerWidget {
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(28),
         border: isDark
-            ? Border.all(color: theme.dividerColor.withOpacity(0.1))
+            ? Border.all(color: theme.dividerColor.withValues(alpha: 0.1))
             : null,
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: theme.primaryColor.withOpacity(0.08),
+              color: theme.primaryColor.withValues(alpha: 0.08),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),
@@ -1197,7 +1202,7 @@ class _UpcomingAppointmentCard extends ConsumerWidget {
                       : Colors.grey.shade100,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: theme.primaryColor.withOpacity(0.2),
+                    color: theme.primaryColor.withValues(alpha: 0.2),
                     width: 2,
                   ),
                 ),
@@ -1276,13 +1281,13 @@ class _UpcomingAppointmentCard extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: isDark
-                  ? theme.scaffoldBackgroundColor.withOpacity(0.5)
+                  ? theme.scaffoldBackgroundColor.withValues(alpha: 0.5)
                   : theme.scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isDark
-                    ? theme.dividerColor.withOpacity(0.1)
-                    : theme.dividerColor.withOpacity(0.5),
+                    ? theme.dividerColor.withValues(alpha: 0.1)
+                    : theme.dividerColor.withValues(alpha: 0.5),
               ),
             ),
             child: Row(
@@ -1366,7 +1371,7 @@ class _UpcomingAppointmentCard extends ConsumerWidget {
                     ),
                     side: BorderSide(
                       color: isDark
-                          ? theme.dividerColor.withOpacity(0.3)
+                          ? theme.dividerColor.withValues(alpha: 0.3)
                           : Colors.grey.shade300,
                       width: 1.5,
                     ),
@@ -1520,13 +1525,15 @@ class _QuickActionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             border: isDark
                 ? Border.all(
-                    color: Theme.of(context).dividerColor.withOpacity(0.1),
+                    color: Theme.of(
+                      context,
+                    ).dividerColor.withValues(alpha: 0.1),
                   )
                 : null,
             boxShadow: [
               if (!isDark)
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -1537,7 +1544,7 @@ class _QuickActionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isDark ? color.withOpacity(0.1) : color,
+                  color: isDark ? color.withValues(alpha: 0.1) : color,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: iconColor, size: 24),

@@ -54,7 +54,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _statusTimer.cancel();
     _messageController.dispose();
     // Reset active chat ID
-    Future.microtask(() => ref.read(chatNotifierProvider.notifier).resetActiveChatUserId());
+    Future.microtask(
+      () => ref.read(chatNotifierProvider.notifier).resetActiveChatUserId(),
+    );
     super.dispose();
   }
 
@@ -70,7 +72,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         final state = next;
         if (state.messages.isNotEmpty &&
             state.messages.last.senderId == widget.otherUserId) {
-          ref.read(chatNotifierProvider.notifier).markAsRead(widget.otherUserId);
+          ref
+              .read(chatNotifierProvider.notifier)
+              .markAsRead(widget.otherUserId);
         }
       }
     });
@@ -86,7 +90,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               decoration: BoxDecoration(
                 color: isDark
                     ? theme.cardColor
-                    : Colors.black.withOpacity(0.05),
+                    : Colors.black.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -117,7 +121,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 boxShadow: [
                   if (_isConnected)
                     BoxShadow(
-                      color: Colors.green.withOpacity(0.4),
+                      color: Colors.green.withValues(alpha: 0.4),
                       blurRadius: 4,
                     ),
                 ],
@@ -180,7 +184,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 colors: [
                   Colors.transparent,
                   isDark
-                      ? theme.dividerColor.withOpacity(0.1)
+                      ? theme.dividerColor.withValues(alpha: 0.1)
                       : Colors.grey.shade200,
                   Colors.transparent,
                 ],
@@ -197,7 +201,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               // File uploading indicator
               if (state is FileUploading)
                 Container(
-                  color: theme.primaryColor.withOpacity(0.1),
+                  color: theme.primaryColor.withValues(alpha: 0.1),
                   padding: const EdgeInsets.symmetric(
                     vertical: 8,
                     horizontal: 16,
@@ -276,7 +280,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           otherUserId: widget.otherUserId,
                           onDelete: (forEveryone) {
                             if (message.id != null) {
-                              ref.read(chatNotifierProvider.notifier).deleteMessage(
+                              ref
+                                  .read(chatNotifierProvider.notifier)
+                                  .deleteMessage(
                                     messageId: message.id!,
                                     receiverId: widget.otherUserId,
                                     forEveryone: forEveryone,
@@ -301,10 +307,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _startCall({required bool isVideo}) async {
     final apiClient = sl<ApiClient>();
-    final localUserId = await apiClient.secureStorage.read(key: 'user_id') ?? '';
+    final localUserId =
+        await apiClient.secureStorage.read(key: 'user_id') ?? '';
     if (!mounted) return;
 
-    final roomName = 'doc-call-$localUserId-${DateTime.now().millisecondsSinceEpoch}';
+    final roomName =
+        'doc-call-$localUserId-${DateTime.now().millisecondsSinceEpoch}';
     final chatRepo = sl<ChatRepository>();
 
     // Get sender name for call
@@ -312,9 +320,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final userData = box.get('currentUser');
     String senderName = 'User';
     if (userData is Map) {
-      senderName = '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim();
+      senderName =
+          '${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}'.trim();
     } else {
-      senderName = '${box.get('firstName', defaultValue: '')} ${box.get('lastName', defaultValue: '')}'.trim();
+      senderName =
+          '${box.get('firstName', defaultValue: '')} ${box.get('lastName', defaultValue: '')}'
+              .trim();
     }
     if (senderName.isEmpty) senderName = 'User';
 
@@ -350,14 +361,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, -2),
             ),
         ],
         border: isDark
             ? Border(
-                top: BorderSide(color: theme.dividerColor.withOpacity(0.1)),
+                top: BorderSide(
+                  color: theme.dividerColor.withValues(alpha: 0.1),
+                ),
               )
             : null,
       ),
@@ -388,7 +401,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                   color: isDark
-                      ? theme.dividerColor.withOpacity(0.1)
+                      ? theme.dividerColor.withValues(alpha: 0.1)
                       : Colors.grey.shade200,
                 ),
               ),
@@ -448,25 +461,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _pickAndSendImage() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result != null && result.files.single.path != null && mounted) {
-      ref.read(chatNotifierProvider.notifier).sendFile(
-        filePath: result.files.single.path!,
-        receiverId: widget.otherUserId,
-        type: 'image',
-      );
+      ref
+          .read(chatNotifierProvider.notifier)
+          .sendFile(
+            filePath: result.files.single.path!,
+            receiverId: widget.otherUserId,
+            type: 'image',
+          );
     }
   }
 
   Future<void> _pickAndSendFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx', 'zip'],
+      allowedExtensions: [
+        'pdf',
+        'doc',
+        'docx',
+        'txt',
+        'xls',
+        'xlsx',
+        'ppt',
+        'pptx',
+        'zip',
+      ],
     );
     if (result != null && result.files.single.path != null && mounted) {
-      ref.read(chatNotifierProvider.notifier).sendFile(
-        filePath: result.files.single.path!,
-        receiverId: widget.otherUserId,
-        type: 'file',
-      );
+      ref
+          .read(chatNotifierProvider.notifier)
+          .sendFile(
+            filePath: result.files.single.path!,
+            receiverId: widget.otherUserId,
+            type: 'file',
+          );
     }
   }
 
@@ -508,10 +535,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
             onPressed: () {
               Navigator.pop(ctx);
-              ref.read(chatNotifierProvider.notifier).clearChat(
-                receiverId: widget.otherUserId,
-                forEveryone: forEveryone,
-              );
+              ref
+                  .read(chatNotifierProvider.notifier)
+                  .clearChat(
+                    receiverId: widget.otherUserId,
+                    forEveryone: forEveryone,
+                  );
             },
           ),
         ],
@@ -549,7 +578,7 @@ class _MessageBubble extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -559,7 +588,7 @@ class _MessageBubble extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -582,7 +611,7 @@ class _MessageBubble extends StatelessWidget {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -648,13 +677,13 @@ class _MessageBubble extends StatelessWidget {
                 : [
                     if (!isDark)
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
                   ],
             border: isDark && !isMe && !isImage
-                ? Border.all(color: theme.dividerColor.withOpacity(0.1))
+                ? Border.all(color: theme.dividerColor.withValues(alpha: 0.1))
                 : null,
           ),
           child: Column(
@@ -675,7 +704,9 @@ class _MessageBubble extends StatelessWidget {
                   message.content,
                   style: TextStyle(
                     fontSize: 15,
-                    color: isMe ? Colors.white : theme.textTheme.bodyLarge?.color,
+                    color: isMe
+                        ? Colors.white
+                        : theme.textTheme.bodyLarge?.color,
                     height: 1.4,
                   ),
                 ),
@@ -686,7 +717,9 @@ class _MessageBubble extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
-                    color: isMe ? Colors.white.withOpacity(0.7) : Colors.grey.shade500,
+                    color: isMe
+                        ? Colors.white.withValues(alpha: 0.7)
+                        : Colors.grey.shade500,
                   ),
                 ),
               ],
@@ -710,15 +743,18 @@ class _ImageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = fileUrl.startsWith('http') ? fileUrl : '${ApiConstants.baseUrl}$fileUrl';
+    final url = fileUrl.startsWith('http')
+        ? fileUrl
+        : '${ApiConstants.baseUrl}$fileUrl';
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: Image.network(
         url,
         width: 200,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 60, color: Colors.grey),
-        loadingBuilder: (_, child, progress) => progress == null
+        errorBuilder: (context, error, stackTrace) =>
+            const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+        loadingBuilder: (context, child, progress) => progress == null
             ? child
             : const SizedBox(
                 width: 200,

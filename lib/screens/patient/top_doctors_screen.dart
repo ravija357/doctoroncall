@@ -12,7 +12,7 @@ class TopDoctorsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -27,38 +27,50 @@ class TopDoctorsScreen extends ConsumerWidget {
               color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.arrow_back_ios_new, color: isDark ? Colors.white70 : (Theme.of(context).iconTheme.color ?? Colors.black87), size: 18),
+            child: Icon(
+              Icons.arrow_back_ios_new,
+              color: isDark
+                  ? Colors.white70
+                  : (Theme.of(context).iconTheme.color ?? Colors.black87),
+              size: 18,
+            ),
           ),
         ),
         title: Text(
           'Top Rated Doctors',
           style: TextStyle(
-            fontWeight: FontWeight.w700, 
-            fontSize: 19, 
-            color: Theme.of(context).textTheme.titleLarge?.color, 
-            letterSpacing: -0.3
+            fontWeight: FontWeight.w700,
+            fontSize: 19,
+            color: Theme.of(context).textTheme.titleLarge?.color,
+            letterSpacing: -0.3,
           ),
         ),
       ),
       body: () {
         final state = ref.watch(doctorNotifierProvider);
         if (state is DoctorLoading) {
-            return Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor, strokeWidth: 2.5));
-          }
-          if (state is DoctorError) {
-            return Center(child: Text((state as DoctorError).message));
-          }
-          if (state is DoctorsLoaded) {
-            final sorted = List<Doctor>.from(state.doctors)
-              ..sort((a, b) => b.averageRating.compareTo(a.averageRating));
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-              itemCount: sorted.length,
-              itemBuilder: (context, index) => _TopDoctorCard(doctor: sorted[index], rank: index + 1),
-            );
-          }
-          return const SizedBox.shrink();
-        }(),
+          return Center(
+            child: CircularProgressIndicator(
+              color: Theme.of(context).primaryColor,
+              strokeWidth: 2.5,
+            ),
+          );
+        }
+        if (state is DoctorError) {
+          return Center(child: Text(state.message));
+        }
+        if (state is DoctorsLoaded) {
+          final sorted = List<Doctor>.from(state.doctors)
+            ..sort((a, b) => b.averageRating.compareTo(a.averageRating));
+          return ListView.builder(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+            itemCount: sorted.length,
+            itemBuilder: (context, index) =>
+                _TopDoctorCard(doctor: sorted[index], rank: index + 1),
+          );
+        }
+        return const SizedBox.shrink();
+      }(),
     );
   }
 }
@@ -81,7 +93,12 @@ class _TopDoctorCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => DoctorProfileScreen(doctor: doctor)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DoctorProfileScreen(doctor: doctor),
+          ),
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
@@ -89,8 +106,18 @@ class _TopDoctorCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.2 : 0.04), blurRadius: 14, offset: const Offset(0, 4))],
-          border: isDark ? Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)) : null,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: isDark
+              ? Border.all(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                )
+              : null,
         ),
         child: Row(
           children: [
@@ -99,7 +126,9 @@ class _TopDoctorCard extends StatelessWidget {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: rank <= 3 ? Colors.amber.withOpacity(0.15) : Theme.of(context).scaffoldBackgroundColor,
+                color: rank <= 3
+                    ? Colors.amber.withValues(alpha: 0.15)
+                    : Theme.of(context).scaffoldBackgroundColor,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -108,7 +137,9 @@ class _TopDoctorCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: rank <= 3 ? Colors.amber.shade800 : Colors.grey.shade600,
+                    color: rank <= 3
+                        ? Colors.amber.shade800
+                        : Colors.grey.shade600,
                   ),
                 ),
               ),
@@ -119,7 +150,9 @@ class _TopDoctorCard extends StatelessWidget {
               radius: 26,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               backgroundImage: ImageUtils.getImageProvider(doctor.image),
-              child: doctor.image == null ? const Icon(Icons.person, color: Colors.grey, size: 28) : null,
+              child: doctor.image == null
+                  ? const Icon(Icons.person, color: Colors.grey, size: 28)
+                  : null,
             ),
             const SizedBox(width: 14),
             // Info
@@ -127,7 +160,14 @@ class _TopDoctorCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_name, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Theme.of(context).textTheme.titleMedium?.color)),
+                  Text(
+                    _name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: Theme.of(context).textTheme.titleMedium?.color,
+                    ),
+                  ),
                   const SizedBox(height: 3),
                   Text(
                     '${doctor.specialization} • ${doctor.experience} yrs',
@@ -147,7 +187,11 @@ class _TopDoctorCard extends StatelessWidget {
                     const SizedBox(width: 3),
                     Text(
                       doctor.averageRating.toStringAsFixed(1),
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Theme.of(context).textTheme.bodyLarge?.color),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
                     ),
                   ],
                 ),

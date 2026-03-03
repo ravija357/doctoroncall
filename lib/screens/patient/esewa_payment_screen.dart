@@ -39,8 +39,14 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
-    _slideAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOutQuart);
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _slideAnim = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutQuart,
+    );
     _animController.forward();
   }
 
@@ -62,7 +68,10 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
     }
 
     if (esewaId != '9800000000' || password != 'Nepal@1234') {
-      _showSnack('Invalid eSewa credentials.\nUse: 9800000000 / Nepal@1234', isError: true);
+      _showSnack(
+        'Invalid eSewa credentials.\nUse: 9800000000 / Nepal@1234',
+        isError: true,
+      );
       return;
     }
 
@@ -102,7 +111,9 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
         content: Text(msg, style: const TextStyle(fontWeight: FontWeight.w500)),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: isError ? Theme.of(context).colorScheme.error : Theme.of(context).primaryColor,
+        backgroundColor: isError
+            ? Theme.of(context).colorScheme.error
+            : Theme.of(context).primaryColor,
       ),
     );
   }
@@ -112,10 +123,12 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final fees = widget.doctor.fees;
-    final doctorName = 'Dr. ${widget.doctor.firstName} ${widget.doctor.lastName}';
+    final doctorName =
+        'Dr. ${widget.doctor.firstName} ${widget.doctor.lastName}';
     final spec = widget.doctor.specialization;
     final dateStr = DateFormat('MMM d, yyyy').format(widget.selectedDate);
-    final timeStr = '${_formatTime(widget.startTime)} - ${_formatTime(widget.endTime)}';
+    final timeStr =
+        '${_formatTime(widget.startTime)} - ${_formatTime(widget.endTime)}';
 
     ref.listen<AppointmentState>(appointmentNotifierProvider, (previous, next) {
       if (next is AppointmentSuccess) {
@@ -144,9 +157,17 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
                 decoration: BoxDecoration(
                   color: theme.cardColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
+                  border: isDark
+                      ? Border.all(
+                          color: theme.dividerColor.withValues(alpha: 0.1),
+                        )
+                      : null,
                 ),
-                child: Icon(Icons.arrow_back_ios_new, color: theme.iconTheme.color, size: 18),
+                child: Icon(
+                  Icons.arrow_back_ios_new,
+                  color: theme.iconTheme.color,
+                  size: 18,
+                ),
               ),
             ),
             centerTitle: true,
@@ -162,216 +183,454 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
           SliverToBoxAdapter(
             child: FadeTransition(
               opacity: _slideAnim,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Doctor card
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: theme.cardColor,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 18, offset: const Offset(0, 5)),
-                          ],
-                          border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: isDark ? theme.scaffoldBackgroundColor : theme.primaryColor.withOpacity(0.1),
-                                image: widget.doctor.image != null
-                                    ? DecorationImage(image: ImageUtils.getImageProvider(widget.doctor.image)!, fit: BoxFit.cover)
-                                    : null,
-                              ),
-                              child: widget.doctor.image == null
-                                  ? Icon(Icons.person, color: isDark ? Colors.grey.shade700 : theme.primaryColor, size: 30)
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Doctor card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: theme.cardColor,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 18,
+                              offset: const Offset(0, 5),
+                            ),
+                        ],
+                        border: isDark
+                            ? Border.all(
+                                color: theme.dividerColor.withValues(
+                                  alpha: 0.1,
+                                ),
+                              )
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              color: isDark
+                                  ? theme.scaffoldBackgroundColor
+                                  : theme.primaryColor.withValues(alpha: 0.1),
+                              image: widget.doctor.image != null
+                                  ? DecorationImage(
+                                      image: ImageUtils.getImageProvider(
+                                        widget.doctor.image,
+                                      )!,
+                                      fit: BoxFit.cover,
+                                    )
                                   : null,
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(doctorName, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 3),
-                                  Text(spec, style: TextStyle(fontSize: 13, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontWeight: FontWeight.w500)),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.calendar_today, size: 13, color: isDark ? Colors.grey.shade500 : Colors.grey.shade500),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        '$dateStr, $timeStr',
-                                        style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade500 : Colors.grey.shade500, fontWeight: FontWeight.w500),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-
-                      // Amount breakdown
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: theme.cardColor,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 4)),
-                          ],
-                          border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
-                        ),
-                        child: Column(
-                          children: [
-                            _amountRow(theme, isDark, 'Consultation Fee', 'NPR ${fees.toStringAsFixed(2)}'),
-                            const SizedBox(height: 14),
-                            _amountRow(theme, isDark, 'Tax Amount', 'NPR 00.00'),
-                            const SizedBox(height: 14),
-                            _amountRow(theme, isDark, 'Service Charge', 'NPR 00.00'),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              child: Container(
-                                height: 1,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.transparent, 
-                                      isDark ? theme.dividerColor.withOpacity(0.1) : Colors.grey.shade300, 
-                                      Colors.transparent
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            _amountRow(theme, isDark, 'Total Amount', 'NPR ${fees.toStringAsFixed(2)}', isBold: true, highlight: true),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-
-                      // eSewa login section
-                      Container(
-                        padding: const EdgeInsets.all(22),
-                        decoration: BoxDecoration(
-                          color: theme.cardColor,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            if (!isDark) BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 4)),
-                          ],
-                          border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // eSewa header
-                            Row(
+                            child: widget.doctor.image == null
+                                ? Icon(
+                                    Icons.person,
+                                    color: isDark
+                                        ? Colors.grey.shade700
+                                        : theme.primaryColor,
+                                    size: 30,
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                RichText(
-                                  text: TextSpan(children: [
-                                    TextSpan(text: 'e', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: theme.primaryColor, fontStyle: FontStyle.italic)),
-                                    TextSpan(text: 'Sewa', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: theme.primaryColor)),
-                                  ]),
+                                Text(
+                                  doctorName,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                                const SizedBox(width: 10),
-                                Text('Login', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
+                                const SizedBox(height: 3),
+                                Text(
+                                  spec,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: isDark
+                                        ? Colors.grey.shade400
+                                        : Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_today,
+                                      size: 13,
+                                      color: isDark
+                                          ? Colors.grey.shade500
+                                          : Colors.grey.shade500,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      '$dateStr, $timeStr',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isDark
+                                            ? Colors.grey.shade500
+                                            : Colors.grey.shade500,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
-                            const SizedBox(height: 22),
-
-                            // eSewa ID field
-                            Text('eSewa Mobile Number', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.grey.shade300 : Colors.grey.shade700)),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _esewaIdController,
-                              keyboardType: TextInputType.phone,
-                              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
-                              decoration: InputDecoration(
-                                hintText: '98XXXXXXXX',
-                                hintStyle: TextStyle(color: isDark ? Colors.grey.shade700 : Colors.grey.shade400),
-                                prefixIcon: Icon(Icons.phone_android, color: theme.primaryColor, size: 20),
-                                filled: true,
-                                fillColor: theme.scaffoldBackgroundColor,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: isDark ? theme.dividerColor.withOpacity(0.1) : Colors.grey.shade200)),
-                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: isDark ? theme.dividerColor.withOpacity(0.1) : Colors.grey.shade200)),
-                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: theme.primaryColor, width: 1.5)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-
-                            // Password field
-                            Text('Password', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.grey.shade300 : Colors.grey.shade700)),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _passwordController,
-                              obscureText: true,
-                              style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
-                              decoration: InputDecoration(
-                                hintText: '••••••••',
-                                hintStyle: TextStyle(color: isDark ? Colors.grey.shade700 : Colors.grey.shade400),
-                                prefixIcon: Icon(Icons.lock_outline, color: theme.primaryColor, size: 20),
-                                filled: true,
-                                fillColor: theme.scaffoldBackgroundColor,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: isDark ? theme.dividerColor.withOpacity(0.1) : Colors.grey.shade200)),
-                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: isDark ? theme.dividerColor.withOpacity(0.1) : Colors.grey.shade200)),
-                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: theme.primaryColor, width: 1.5)),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Pay Now button
-                      GestureDetector(
-                        onTap: _isProcessing ? null : _processPayment,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: _isProcessing
-                                  ? [Colors.grey.shade400, Colors.grey.shade500]
-                                  : [theme.primaryColor, theme.primaryColor],
-                            ),
-                            borderRadius: BorderRadius.circular(18),
-                            boxShadow: _isProcessing || isDark
-                                ? []
-                                : [BoxShadow(color: theme.primaryColor.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))],
                           ),
-                          child: Center(
-                            child: _isProcessing
-                                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                                : const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.payment, color: Colors.white, size: 22),
-                                      SizedBox(width: 10),
-                                      Text(
-                                        'Pay Now',
-                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.3),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Amount breakdown
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: theme.cardColor,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                        ],
+                        border: isDark
+                            ? Border.all(
+                                color: theme.dividerColor.withValues(
+                                  alpha: 0.1,
+                                ),
+                              )
+                            : null,
+                      ),
+                      child: Column(
+                        children: [
+                          _amountRow(
+                            theme,
+                            isDark,
+                            'Consultation Fee',
+                            'NPR ${fees.toStringAsFixed(2)}',
+                          ),
+                          const SizedBox(height: 14),
+                          _amountRow(theme, isDark, 'Tax Amount', 'NPR 00.00'),
+                          const SizedBox(height: 14),
+                          _amountRow(
+                            theme,
+                            isDark,
+                            'Service Charge',
+                            'NPR 00.00',
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Container(
+                              height: 1,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.transparent,
+                                    isDark
+                                        ? theme.dividerColor.withValues(
+                                            alpha: 0.1,
+                                          )
+                                        : Colors.grey.shade300,
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          _amountRow(
+                            theme,
+                            isDark,
+                            'Total Amount',
+                            'NPR ${fees.toStringAsFixed(2)}',
+                            isBold: true,
+                            highlight: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // eSewa login section
+                    Container(
+                      padding: const EdgeInsets.all(22),
+                      decoration: BoxDecoration(
+                        color: theme.cardColor,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                        ],
+                        border: isDark
+                            ? Border.all(
+                                color: theme.dividerColor.withValues(
+                                  alpha: 0.1,
+                                ),
+                              )
+                            : null,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // eSewa header
+                          Row(
+                            children: [
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: 'e',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w900,
+                                        color: theme.primaryColor,
+                                        fontStyle: FontStyle.italic,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                    TextSpan(
+                                      text: 'Sewa',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                        color: theme.primaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Login',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 22),
+
+                          // eSewa ID field
+                          Text(
+                            'eSewa Mobile Number',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? Colors.grey.shade300
+                                  : Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _esewaIdController,
+                            keyboardType: TextInputType.phone,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: '98XXXXXXXX',
+                              hintStyle: TextStyle(
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade400,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.phone_android,
+                                color: theme.primaryColor,
+                                size: 20,
+                              ),
+                              filled: true,
+                              fillColor: theme.scaffoldBackgroundColor,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: isDark
+                                      ? theme.dividerColor.withValues(
+                                          alpha: 0.1,
+                                        )
+                                      : Colors.grey.shade200,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: isDark
+                                      ? theme.dividerColor.withValues(
+                                          alpha: 0.1,
+                                        )
+                                      : Colors.grey.shade200,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: theme.primaryColor,
+                                  width: 1.5,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+
+                          // Password field
+                          Text(
+                            'Password',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? Colors.grey.shade300
+                                  : Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _passwordController,
+                            obscureText: true,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: '••••••••',
+                              hintStyle: TextStyle(
+                                color: isDark
+                                    ? Colors.grey.shade700
+                                    : Colors.grey.shade400,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.lock_outline,
+                                color: theme.primaryColor,
+                                size: 20,
+                              ),
+                              filled: true,
+                              fillColor: theme.scaffoldBackgroundColor,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: isDark
+                                      ? theme.dividerColor.withValues(
+                                          alpha: 0.1,
+                                        )
+                                      : Colors.grey.shade200,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: isDark
+                                      ? theme.dividerColor.withValues(
+                                          alpha: 0.1,
+                                        )
+                                      : Colors.grey.shade200,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: theme.primaryColor,
+                                  width: 1.5,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Pay Now button
+                    GestureDetector(
+                      onTap: _isProcessing ? null : _processPayment,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: _isProcessing
+                                ? [Colors.grey.shade400, Colors.grey.shade500]
+                                : [theme.primaryColor, theme.primaryColor],
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: _isProcessing || isDark
+                              ? []
+                              : [
+                                  BoxShadow(
+                                    color: theme.primaryColor.withValues(
+                                      alpha: 0.35,
+                                    ),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                        ),
+                        child: Center(
+                          child: _isProcessing
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2.5,
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.payment,
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      'Pay Now',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                         ),
                       ),
-                      const SizedBox(height: 36),
-                      const SizedBox(height: 36),
-                      const SizedBox(height: 36),
+                    ),
+                    const SizedBox(height: 36),
+                    const SizedBox(height: 36),
+                    const SizedBox(height: 36),
                     const SizedBox(height: 36),
                   ],
                 ),
@@ -383,7 +642,14 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
     );
   }
 
-  Widget _amountRow(ThemeData theme, bool isDark, String label, String value, {bool isBold = false, bool highlight = false}) {
+  Widget _amountRow(
+    ThemeData theme,
+    bool isDark,
+    String label,
+    String value, {
+    bool isBold = false,
+    bool highlight = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -392,7 +658,9 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
           style: TextStyle(
             fontSize: isBold ? 16 : 14,
             fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-            color: highlight ? theme.textTheme.titleLarge?.color : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
+            color: highlight
+                ? theme.textTheme.titleLarge?.color
+                : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
           ),
         ),
         Text(
@@ -400,14 +668,22 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
           style: TextStyle(
             fontSize: isBold ? 16 : 14,
             fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-            color: highlight ? theme.primaryColor : theme.textTheme.titleLarge?.color,
+            color: highlight
+                ? theme.primaryColor
+                : theme.textTheme.titleLarge?.color,
           ),
         ),
       ],
     );
   }
 
-  void _showSuccessDialog(ThemeData theme, bool isDark, String doctorName, String dateStr, String timeStr) {
+  void _showSuccessDialog(
+    ThemeData theme,
+    bool isDark,
+    String doctorName,
+    String dateStr,
+    String timeStr,
+  ) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -422,18 +698,32 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.1),
+                color: theme.primaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.check_circle, color: theme.primaryColor, size: 56),
+              child: Icon(
+                Icons.check_circle,
+                color: theme.primaryColor,
+                size: 56,
+              ),
             ),
             const SizedBox(height: 20),
-            Text('Payment Successful!', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              'Payment Successful!',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 10),
             Text(
               'Appointment booked with\n$doctorName\n$dateStr at $timeStr',
               textAlign: TextAlign.center,
-              style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 14, fontWeight: FontWeight.w500, height: 1.5),
+              style: TextStyle(
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                height: 1.5,
+              ),
             ),
           ],
         ),
@@ -445,7 +735,9 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   elevation: 0,
                 ),
@@ -453,7 +745,14 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
                   Navigator.of(ctx).pop();
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
-                child: const Text('View Appointments', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                child: const Text(
+                  'View Appointments',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
               ),
             ),
           ),

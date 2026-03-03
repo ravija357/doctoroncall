@@ -53,6 +53,7 @@ dependencies:
   open_filex: ^4.4.1
   jitsi_meet_flutter_sdk: ^11.6.0
   local_auth: ^3.0.1
+  google_sign_in: ^6.2.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

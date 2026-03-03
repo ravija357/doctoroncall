@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:doctoroncall/core/providers/lock_provider.dart';
 import 'package:doctoroncall/core/providers/biometric_providers.dart';
 import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
 
 import 'biometric_mocks.mocks.dart';
 

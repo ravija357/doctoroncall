@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:doctoroncall/features/messages/domain/repositories/chat_repository.dart';
 import 'package:doctoroncall/features/messages/domain/entities/message.dart';
-import 'package:doctoroncall/features/messages/data/models/chat_contact_model.dart';
 import 'package:doctoroncall/core/di/injection_container.dart' as di;
 import 'package:doctoroncall/features/messages/presentation/bloc/chat_state.dart';
 
@@ -19,7 +18,7 @@ class ChatNotifier extends _$ChatNotifier {
   @override
   ChatState build() {
     _chatRepository = di.sl<ChatRepository>();
-    
+
     ref.onDispose(() {
       _cancelSubscriptions();
     });
@@ -35,18 +34,22 @@ class ChatNotifier extends _$ChatNotifier {
       _handleMessageReceived(message);
     });
 
-    _messageDeletedSubscription = _chatRepository.messageDeletedStream().listen((messageId) {
-      _handleMessageDeleted(messageId);
-    });
+    _messageDeletedSubscription = _chatRepository.messageDeletedStream().listen(
+      (messageId) {
+        _handleMessageDeleted(messageId);
+      },
+    );
 
     _chatClearedSubscription = _chatRepository.chatClearedStream().listen((_) {
       _handleChatCleared();
     });
 
-    _notificationSyncSubscription = _chatRepository.notificationSyncStream().listen((data) {
-      print('[SOCKET] Chat/Notification Sync Received: $data');
-      loadContacts(isBackground: true);
-    });
+    _notificationSyncSubscription = _chatRepository
+        .notificationSyncStream()
+        .listen((data) {
+          print('[SOCKET] Chat/Notification Sync Received: $data');
+          loadContacts(isBackground: true);
+        });
   }
 
   void disconnectSocket() {
@@ -79,10 +82,7 @@ class ChatNotifier extends _$ChatNotifier {
   Future<void> loadMessages(String userId) async {
     try {
       final messages = await _chatRepository.getMessages(userId);
-      state = MessagesLoaded(
-        messages: messages,
-        activeChatUserId: userId,
-      );
+      state = MessagesLoaded(messages: messages, activeChatUserId: userId);
     } catch (e) {
       state = ChatError(message: e.toString());
     }
@@ -99,9 +99,12 @@ class ChatNotifier extends _$ChatNotifier {
   void _handleMessageReceived(Message message) {
     if (state is MessagesLoaded) {
       final currentState = state as MessagesLoaded;
-      final messageExists = currentState.messages.any((m) => m.id == message.id);
+      final messageExists = currentState.messages.any(
+        (m) => m.id == message.id,
+      );
       if (!messageExists) {
-        final updatedMessages = List<Message>.from(currentState.messages)..add(message);
+        final updatedMessages = List<Message>.from(currentState.messages)
+          ..add(message);
         state = MessagesLoaded(
           messages: updatedMessages,
           activeChatUserId: currentState.activeChatUserId,
@@ -115,7 +118,9 @@ class ChatNotifier extends _$ChatNotifier {
   void _handleMessageDeleted(String messageId) {
     if (state is MessagesLoaded) {
       final currentState = state as MessagesLoaded;
-      final updated = currentState.messages.where((m) => m.id != messageId).toList();
+      final updated = currentState.messages
+          .where((m) => m.id != messageId)
+          .toList();
       state = MessagesLoaded(
         messages: updated,
         activeChatUserId: currentState.activeChatUserId,
@@ -146,7 +151,10 @@ class ChatNotifier extends _$ChatNotifier {
     _handleMessageDeleted(messageId);
   }
 
-  Future<void> clearChat({required String receiverId, required bool forEveryone}) async {
+  Future<void> clearChat({
+    required String receiverId,
+    required bool forEveryone,
+  }) async {
     _chatRepository.clearChat(receiverId: receiverId, forEveryone: forEveryone);
     _handleChatCleared();
   }

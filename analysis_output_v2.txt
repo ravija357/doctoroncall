@@ -1,0 +1,155 @@
+Analyzing doctoroncall...                                       
+
+   info • Don't invoke 'print' in production code • lib/app.dart:84:7 • avoid_print
+   info • 'AutoDisposeProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead • lib/core/providers/biometric_providers.g.dart:23:31 • deprecated_member_use
+   info • 'AutoDisposeProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead • lib/core/providers/biometric_providers.g.dart:39:28 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/core/services/biometric_service.dart:12:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/core/services/biometric_service.dart:21:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/core/services/biometric_service.dart:33:7 • avoid_print
+   info • Unnecessary use of multiple underscores • lib/core/utils/image_utils.dart:42:17 • unnecessary_underscores
+   info • Parameters ''id', 'doctorId', 'patientId', 'dateTime', 'startTime', 'endTime', 'status', 'reason', 'notes', 'doctorName', 'specialization', 'hospital', 'doctorImage', 'patientName', and 'prescriptionUrl'' could be super parameters • lib/features/appointments/data/models/appointment_model.dart:51:3 • use_super_parameters
+   info • Don't invoke 'print' in production code • lib/features/auth/presentation/providers/auth_provider.dart:23:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/auth/presentation/providers/auth_provider.dart:92:7 • avoid_print
+   info • Constructors in '@immutable' classes should be declared as 'const' • lib/features/doctors/data/models/doctor_model.dart:43:3 • prefer_const_constructors_in_immutables
+   info • Parameters ''id', 'userId', 'firstName', 'lastName', 'image', 'specialization', 'experience', 'bio', 'fees', 'hospital', 'averageRating', and 'totalReviews'' could be super parameters • lib/features/doctors/data/models/doctor_model.dart:43:3 • use_super_parameters
+   info • Parameters ''day', 'startTime', 'endTime', and 'isOff'' could be super parameters • lib/features/doctors/data/models/schedule_model.dart:4:9 • use_super_parameters
+   info • The member 'toJson' overrides an inherited member but isn't annotated with '@override' • lib/features/doctors/data/models/schedule_model.dart:25:24 • annotate_overrides
+   info • The prefix 'IO' isn't a lower_case_with_underscores identifier • lib/features/messages/data/datasources/chat_remote_data_source.dart:3:60 • library_prefixes
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:121:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:131:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:135:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:139:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:143:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:147:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:205:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:210:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:215:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:220:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:225:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:230:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:235:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:361:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/data/datasources/chat_remote_data_source.dart:368:7 • avoid_print
+   info • Use 'whereType' to select elements of a given type • lib/features/messages/data/datasources/chat_remote_data_source.dart:411:14 • prefer_iterable_wheretype
+   info • Don't invoke 'print' in production code • lib/features/messages/presentation/providers/chat_provider.dart:50:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/features/messages/presentation/providers/chat_provider.dart:188:7 • avoid_print
+   info • Field overrides a field inherited from 'AppNotification' • lib/features/notifications/data/models/notification_model.dart:9:16 • overridden_fields
+   info • The member 'id' overrides an inherited member but isn't annotated with '@override' • lib/features/notifications/data/models/notification_model.dart:9:16 • annotate_overrides
+   info • Field overrides a field inherited from 'AppNotification' • lib/features/notifications/data/models/notification_model.dart:12:16 • overridden_fields
+   info • The member 'message' overrides an inherited member but isn't annotated with '@override' • lib/features/notifications/data/models/notification_model.dart:12:16 • annotate_overrides
+   info • Field overrides a field inherited from 'AppNotification' • lib/features/notifications/data/models/notification_model.dart:15:16 • overridden_fields
+   info • The member 'type' overrides an inherited member but isn't annotated with '@override' • lib/features/notifications/data/models/notification_model.dart:15:16 • annotate_overrides
+   info • Field overrides a field inherited from 'AppNotification' • lib/features/notifications/data/models/notification_model.dart:18:17 • overridden_fields
+   info • The member 'relatedId' overrides an inherited member but isn't annotated with '@override' • lib/features/notifications/data/models/notification_model.dart:18:17 • annotate_overrides
+   info • Field overrides a field inherited from 'AppNotification' • lib/features/notifications/data/models/notification_model.dart:21:17 • overridden_fields
+   info • The member 'link' overrides an inherited member but isn't annotated with '@override' • lib/features/notifications/data/models/notification_model.dart:21:17 • annotate_overrides
+   info • Field overrides a field inherited from 'AppNotification' • lib/features/notifications/data/models/notification_model.dart:24:14 • overridden_fields
+   info • The member 'isRead' overrides an inherited member but isn't annotated with '@override' • lib/features/notifications/data/models/notification_model.dart:24:14 • annotate_overrides
+   info • Field overrides a field inherited from 'AppNotification' • lib/features/notifications/data/models/notification_model.dart:27:18 • overridden_fields
+   info • The member 'createdAt' overrides an inherited member but isn't annotated with '@override' • lib/features/notifications/data/models/notification_model.dart:27:18 • annotate_overrides
+   info • Constructors in '@immutable' classes should be declared as 'const' • lib/features/notifications/data/models/notification_model.dart:29:3 • prefer_const_constructors_in_immutables
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/auth/login_screen.dart:278:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/auth/login_screen.dart:283:75 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/auth/role_selection_screen.dart:33:48 • deprecated_member_use
+warning • The value of the local variable 'size' isn't used • lib/screens/auth/signup_screen.dart:59:11 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/auth/signup_screen.dart:168:59 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/auth/signup_screen.dart:234:33 • deprecated_member_use
+warning • Unused import: 'package:doctoroncall/screens/auth/role_selection_screen.dart' • lib/screens/auth/splash_screen.dart:1:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/auth/splash_screen.dart:88:106 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/auth/splash_screen.dart:172:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/auth/splash_screen.dart:197:69 • deprecated_member_use
+warning • The value of the field '_isInitialLoad' isn't used • lib/screens/doctor/availability_screen.dart:19:8 • unused_field
+warning • Unnecessary cast • lib/screens/doctor/availability_screen.dart:131:28 • unnecessary_cast
+   info • Unnecessary use of multiple underscores • lib/screens/doctor/availability_screen.dart:235:47 • unnecessary_underscores
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/availability_screen.dart:306:35 • deprecated_member_use
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/doctor/availability_screen.dart:362:13 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/screens/doctor/doctor_dashboard_screen.dart:526:49 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores • lib/screens/doctor/doctor_dashboard_screen.dart:730:47 • unnecessary_underscores
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/doctor_dashboard_screen.dart:881:30 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/doctor_main_screen.dart:64:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/doctor_main_screen.dart:68:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/doctor_main_screen.dart:102:61 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/doctor_main_screen.dart:103:46 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/doctor_main_screen.dart:107:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/doctor_main_screen.dart:108:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/doctor_main_screen.dart:113:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/doctor_main_screen.dart:203:38 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/doctor_main_screen.dart:236:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/my_patients_screen.dart:44:86 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/screens/doctor/my_patients_screen.dart:80:47 • unnecessary_underscores
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/my_patients_screen.dart:203:77 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/my_patients_screen.dart:206:35 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/my_patients_screen.dart:216:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/my_patients_screen.dart:255:67 • deprecated_member_use
+warning • The value of the local variable 'isDark' isn't used • lib/screens/doctor/patient_detail_screen.dart:21:11 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/patient_detail_screen.dart:168:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/patient_detail_screen.dart:294:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/patient_detail_screen.dart:489:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/pending_requests_screen.dart:37:47 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/screens/doctor/pending_requests_screen.dart:84:45 • unnecessary_underscores
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/pending_requests_screen.dart:149:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/pending_requests_screen.dart:162:58 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/pending_requests_screen.dart:252:60 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/pending_requests_screen.dart:302:32 • deprecated_member_use
+warning • Unnecessary cast • lib/screens/doctor/revenue_screen.dart:61:26 • unnecessary_cast
+warning • Unnecessary cast • lib/screens/doctor/revenue_screen.dart:210:36 • unnecessary_cast
+   info • Statements in an if should be enclosed in a block • lib/screens/doctor/revenue_screen.dart:217:27 • curly_braces_in_flow_control_structures
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/revenue_screen.dart:283:59 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/screens/doctor/reviews_screen.dart:55:9 • avoid_print
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/reviews_screen.dart:132:69 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/reviews_screen.dart:243:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/reviews_screen.dart:245:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/reviews_screen.dart:329:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/reviews_screen.dart:331:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/reviews_screen.dart:343:57 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/doctor/reviews_screen.dart:370:39 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/appointment_list_screen.dart:176:42 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/book_appointment_screen.dart:499:57 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/book_appointment_screen.dart:626:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/book_appointment_screen.dart:699:35 • deprecated_member_use
+   info • Unnecessary braces in a string interpolation • lib/screens/patient/book_appointment_screen.dart:748:21 • unnecessary_brace_in_string_interps
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/doctor_search_screen.dart:71:58 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/doctor_search_screen.dart:95:49 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/screens/patient/doctor_search_screen.dart:141:43 • unnecessary_underscores
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/doctor_search_screen.dart:159:56 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/doctor_search_screen.dart:164:65 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/screens/patient/doctor_search_screen.dart:292:41 • unnecessary_underscores
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/doctor_search_screen.dart:315:53 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/doctor_search_screen.dart:321:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/doctor_search_screen.dart:331:61 • deprecated_member_use
+warning • Unnecessary cast • lib/screens/patient/esewa_payment_screen.dart:138:28 • unnecessary_cast
+   info • Unnecessary braces in a string interpolation • lib/screens/patient/esewa_payment_screen.dart:772:21 • unnecessary_brace_in_string_interps
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/medical_records_screen.dart:42:74 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/screens/patient/medical_records_screen.dart:80:47 • unnecessary_underscores
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/medical_records_screen.dart:143:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/medical_records_screen.dart:148:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/medical_records_screen.dart:158:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/medical_records_screen.dart:208:60 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/medical_records_screen.dart:255:60 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/patient_main_screen.dart:145:49 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/screens/patient/patient_main_screen.dart:537:37 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores • lib/screens/patient/patient_main_screen.dart:658:37 • unnecessary_underscores
+   info • Statements in an if should be enclosed in a block • lib/screens/patient/patient_main_screen.dart:767:19 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/patient/patient_main_screen.dart:769:19 • curly_braces_in_flow_control_structures
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/prescriptions_screen.dart:42:74 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/screens/patient/prescriptions_screen.dart:80:47 • unnecessary_underscores
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/prescriptions_screen.dart:143:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/prescriptions_screen.dart:148:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/prescriptions_screen.dart:158:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/patient/prescriptions_screen.dart:223:73 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/shared/app_lock_screen.dart:45:46 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/shared/app_lock_screen.dart:63:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/shared/app_lock_screen.dart:109:36 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/shared/bottom_navigation_screen.dart:53:47 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/shared/bottom_navigation_screen.dart:65:56 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/screens/shared/chat_screen.dart:755:27 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores • lib/screens/shared/chat_screen.dart:755:31 • unnecessary_underscores
+   info • Don't use 'BuildContext's across async gaps • lib/screens/shared/image_upload_screen.dart:97:30 • use_build_context_synchronously
+   info • Unnecessary use of multiple underscores • lib/screens/shared/message_list_screen.dart:121:37 • unnecessary_underscores
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/shared/message_list_screen.dart:162:53 • deprecated_member_use
+   info • Unnecessary use of multiple underscores • lib/screens/shared/message_list_screen.dart:184:55 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores • lib/screens/shared/message_list_screen.dart:184:59 • unnecessary_underscores
+   info • Don't invoke 'print' in production code • lib/screens/shared/profile_screen.dart:74:7 • avoid_print
+warning • The value of the local variable 'isDark' isn't used • lib/screens/shared/profile_screen.dart:411:11 • unused_local_variable
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/shared/profile_screen.dart:458:7 • deprecated_member_use
+

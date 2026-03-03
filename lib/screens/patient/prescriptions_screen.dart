@@ -19,9 +19,9 @@ class PrescriptionsScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: isDark 
-              ? [theme.scaffoldBackgroundColor, theme.scaffoldBackgroundColor]
-              : [theme.primaryColor, theme.scaffoldBackgroundColor],
+            colors: isDark
+                ? [theme.scaffoldBackgroundColor, theme.scaffoldBackgroundColor]
+                : [theme.primaryColor, theme.scaffoldBackgroundColor],
             stops: const [0.0, 0.3],
           ),
         ),
@@ -39,10 +39,15 @@ class PrescriptionsScreen extends ConsumerWidget {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isDark ? theme.cardColor : Colors.white.withOpacity(0.2),
+                          color: isDark
+                              ? theme.cardColor
+                              : Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.chevron_left, color: isDark ? theme.iconTheme.color : Colors.white),
+                        child: Icon(
+                          Icons.chevron_left,
+                          color: isDark ? theme.iconTheme.color : Colors.white,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -51,7 +56,9 @@ class PrescriptionsScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: isDark ? theme.textTheme.titleLarge?.color : Colors.white,
+                        color: isDark
+                            ? theme.textTheme.titleLarge?.color
+                            : Colors.white,
                       ),
                     ),
                   ],
@@ -63,29 +70,34 @@ class PrescriptionsScreen extends ConsumerWidget {
                 child: () {
                   final state = ref.watch(appointmentNotifierProvider);
                   if (state is AppointmentLoading) {
-                      return Center(child: CircularProgressIndicator(color: isDark ? theme.primaryColor : theme.primaryColor));
-                    }
-                    if (state is AppointmentsLoaded) {
-                      final records = state.appointments
-                          .where((a) => a.status.toLowerCase() == 'completed')
-                          .toList();
-                      
-                      if (records.isEmpty) {
-                        return _buildEmptyState(theme, isDark);
-                      }
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: isDark ? theme.primaryColor : theme.primaryColor,
+                      ),
+                    );
+                  }
+                  if (state is AppointmentsLoaded) {
+                    final records = state.appointments
+                        .where((a) => a.status.toLowerCase() == 'completed')
+                        .toList();
 
-                      return ListView.separated(
-                        padding: const EdgeInsets.all(20),
-                        itemCount: records.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 16),
-                        itemBuilder: (context, index) {
-                          final record = records[index];
-                          return _PrescriptionCard(record: record);
-                        },
-                      );
+                    if (records.isEmpty) {
+                      return _buildEmptyState(theme, isDark);
                     }
-                    return _buildEmptyState(theme, isDark);
-                  }(),
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: records.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final record = records[index];
+                        return _PrescriptionCard(record: record);
+                      },
+                    );
+                  }
+                  return _buildEmptyState(theme, isDark);
+                }(),
               ),
             ],
           ),
@@ -99,7 +111,11 @@ class PrescriptionsScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.medication, size: 80, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+          Icon(
+            Icons.medication,
+            size: 80,
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          ),
           const SizedBox(height: 16),
           Text(
             'No prescriptions found',
@@ -114,7 +130,10 @@ class PrescriptionsScreen extends ConsumerWidget {
             child: Text(
               'Digital prescriptions from your visits will appear here.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade400, fontSize: 13),
+              style: TextStyle(
+                color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                fontSize: 13,
+              ),
             ),
           ),
         ],
@@ -132,20 +151,23 @@ class _PrescriptionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final dateStr = DateFormat('MMMM d, y').format(record.dateTime);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          if (!isDark) BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
         ],
-        border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
+        border: isDark
+            ? Border.all(color: theme.dividerColor.withValues(alpha: 0.1))
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,10 +177,15 @@ class _PrescriptionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.teal.withOpacity(0.1) : Colors.teal.shade50,
+                  color: isDark
+                      ? Colors.teal.withValues(alpha: 0.1)
+                      : Colors.teal.shade50,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(Icons.medication_rounded, color: isDark ? Colors.teal.shade300 : Colors.teal.shade600),
+                child: Icon(
+                  Icons.medication_rounded,
+                  color: isDark ? Colors.teal.shade300 : Colors.teal.shade600,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -174,7 +201,12 @@ class _PrescriptionCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Dr. ${record.doctorName ?? "Specialist"}',
-                      style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade500, fontSize: 13),
+                      style: TextStyle(
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade500,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -182,9 +214,9 @@ class _PrescriptionCard extends StatelessWidget {
               Text(
                 dateStr,
                 style: TextStyle(
-                  fontWeight: FontWeight.bold, 
+                  fontWeight: FontWeight.bold,
                   fontSize: 13,
-                  color: theme.textTheme.bodyMedium?.color
+                  color: theme.textTheme.bodyMedium?.color,
                 ),
               ),
             ],
@@ -200,7 +232,9 @@ class _PrescriptionCard extends StatelessWidget {
                         content: const Text('Opening prescription PDF...'),
                         backgroundColor: theme.primaryColor,
                         behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     );
                   },
@@ -211,16 +245,24 @@ class _PrescriptionCard extends StatelessWidget {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? theme.scaffoldBackgroundColor : theme.scaffoldBackgroundColor,
+                  color: isDark
+                      ? theme.scaffoldBackgroundColor
+                      : theme.scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
+                  border: isDark
+                      ? Border.all(
+                          color: theme.dividerColor.withValues(alpha: 0.1),
+                        )
+                      : null,
                 ),
                 child: IconButton(
                   onPressed: () {
@@ -228,7 +270,10 @@ class _PrescriptionCard extends StatelessWidget {
                       SnackBar(
                         content: const Row(
                           children: [
-                            Icon(Icons.download_done_rounded, color: Colors.white),
+                            Icon(
+                              Icons.download_done_rounded,
+                              color: Colors.white,
+                            ),
                             SizedBox(width: 12),
                             Text('Prescription saved to downloads'),
                           ],

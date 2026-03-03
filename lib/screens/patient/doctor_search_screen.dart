@@ -68,7 +68,7 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
               color: theme.scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(12),
               border: isDark
-                  ? Border.all(color: theme.dividerColor.withOpacity(0.1))
+                  ? Border.all(color: theme.dividerColor.withValues(alpha: 0.1))
                   : null,
             ),
             child: Icon(
@@ -92,7 +92,7 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                     color: theme.scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: theme.dividerColor.withOpacity(0.1),
+                      color: theme.dividerColor.withValues(alpha: 0.1),
                     ),
                   ),
                   child: TextField(
@@ -156,13 +156,13 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                             border: Border.all(
                               color: isSelected
                                   ? theme.primaryColor
-                                  : theme.dividerColor.withOpacity(0.2),
+                                  : theme.dividerColor.withValues(alpha: 0.2),
                             ),
                             boxShadow: isSelected && !isDark
                                 ? [
                                     BoxShadow(
-                                      color: theme.primaryColor.withOpacity(
-                                        0.3,
+                                      color: theme.primaryColor.withValues(
+                                        alpha: 0.3,
                                       ),
                                       blurRadius: 8,
                                       offset: const Offset(0, 4),
@@ -312,13 +312,13 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                           boxShadow: [
                             if (!isDark)
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
+                                color: Colors.black.withValues(alpha: 0.04),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
                           ],
                           border: Border.all(
-                            color: theme.dividerColor.withOpacity(0.1),
+                            color: theme.dividerColor.withValues(alpha: 0.1),
                           ),
                         ),
                         child: Row(
@@ -328,7 +328,9 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: theme.primaryColor.withOpacity(0.3),
+                                  color: theme.primaryColor.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   width: 2,
                                 ),
                               ),

@@ -20,7 +20,11 @@ abstract class ChatRemoteDataSource {
   bool get isConnected;
 
   // Delete & clear
-  void emitDeleteMessage({required String messageId, required String receiverId, required bool forEveryone});
+  void emitDeleteMessage({
+    required String messageId,
+    required String receiverId,
+    required bool forEveryone,
+  });
   void emitClearChat({required String receiverId, required bool forEveryone});
   Stream<void> get chatClearedStream;
   Stream<dynamic> get appointmentSyncStream;
@@ -30,10 +34,20 @@ abstract class ChatRemoteDataSource {
   Stream<dynamic> get reviewSyncStream;
 
   /// Upload a file/image, returns the saved message JSON from the server
-  Future<MessageModel> uploadFile({required String filePath, required String receiverId, required String type});
+  Future<MessageModel> uploadFile({
+    required String filePath,
+    required String receiverId,
+    required String type,
+  });
 
   // Call signaling
-  void emitCallUser({required String userToCall, required dynamic signalData, required String from, required String name, required String callType});
+  void emitCallUser({
+    required String userToCall,
+    required dynamic signalData,
+    required String from,
+    required String name,
+    required String callType,
+  });
   void emitAnswerCall({required String to, required dynamic signal});
   void emitIceCandidate({required String to, required dynamic candidate});
   void emitEndCall(String to);
@@ -46,19 +60,32 @@ abstract class ChatRemoteDataSource {
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   final ApiClient apiClient;
   IO.Socket? _socket;
-  final StreamController<MessageModel> _messageController = StreamController<MessageModel>.broadcast();
-  final StreamController<dynamic> _notificationController = StreamController<dynamic>.broadcast();
-  final StreamController<Map<String, dynamic>> _incomingCallController = StreamController<Map<String, dynamic>>.broadcast();
-  final StreamController<dynamic> _callAcceptedController = StreamController<dynamic>.broadcast();
-  final StreamController<dynamic> _iceCandidateController = StreamController<dynamic>.broadcast();
-  final StreamController<String> _callEndedController = StreamController<String>.broadcast();
-  final StreamController<String> _messageDeletedController = StreamController<String>.broadcast();
-  final StreamController<void> _chatClearedController = StreamController<void>.broadcast();
-  final StreamController<dynamic> _appointmentSyncController = StreamController<dynamic>.broadcast();
-  final StreamController<dynamic> _notificationSyncController = StreamController<dynamic>.broadcast();
-  final StreamController<dynamic> _doctorSyncController = StreamController<dynamic>.broadcast();
-  final StreamController<dynamic> _scheduleSyncController = StreamController<dynamic>.broadcast();
-  final StreamController<dynamic> _reviewSyncController = StreamController<dynamic>.broadcast();
+  final StreamController<MessageModel> _messageController =
+      StreamController<MessageModel>.broadcast();
+  final StreamController<dynamic> _notificationController =
+      StreamController<dynamic>.broadcast();
+  final StreamController<Map<String, dynamic>> _incomingCallController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<dynamic> _callAcceptedController =
+      StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _iceCandidateController =
+      StreamController<dynamic>.broadcast();
+  final StreamController<String> _callEndedController =
+      StreamController<String>.broadcast();
+  final StreamController<String> _messageDeletedController =
+      StreamController<String>.broadcast();
+  final StreamController<void> _chatClearedController =
+      StreamController<void>.broadcast();
+  final StreamController<dynamic> _appointmentSyncController =
+      StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _notificationSyncController =
+      StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _doctorSyncController =
+      StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _scheduleSyncController =
+      StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _reviewSyncController =
+      StreamController<dynamic>.broadcast();
 
   ChatRemoteDataSourceImpl({required this.apiClient});
 
@@ -72,7 +99,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   bool get isConnected => _socket?.connected ?? false;
 
   @override
-  Stream<Map<String, dynamic>> get incomingCallStream => _incomingCallController.stream;
+  Stream<Map<String, dynamic>> get incomingCallStream =>
+      _incomingCallController.stream;
 
   @override
   Stream<dynamic> get callAcceptedStream => _callAcceptedController.stream;
@@ -90,10 +118,12 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Stream<void> get chatClearedStream => _chatClearedController.stream;
 
   @override
-  Stream<dynamic> get appointmentSyncStream => _appointmentSyncController.stream;
+  Stream<dynamic> get appointmentSyncStream =>
+      _appointmentSyncController.stream;
 
   @override
-  Stream<dynamic> get notificationSyncStream => _notificationSyncController.stream;
+  Stream<dynamic> get notificationSyncStream =>
+      _notificationSyncController.stream;
 
   @override
   Stream<dynamic> get doctorSyncStream => _doctorSyncController.stream;
@@ -108,45 +138,48 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   void connectSocket() async {
     if (_socket != null) {
       if (!_socket!.connected) {
-         _socket!.connect();
+        _socket!.connect();
       }
       return;
     }
-    
+
     final userId = await apiClient.secureStorage.read(key: 'user_id');
     if (userId == null) {
       return;
     }
 
-    print('[SOCKET] Attempting to connect for user: $userId');
-    
-    _socket = IO.io(ApiConstants.baseUrl, IO.OptionBuilder()
-        .setTransports(['websocket', 'polling']) // Prefer websocket
-        .setAuth({'userId': userId})
-        .enableForceNew()
-        .disableAutoConnect()
-        .build());
-    
+    // Removed debug print
+
+    _socket = IO.io(
+      ApiConstants.baseUrl,
+      IO.OptionBuilder()
+          .setTransports(['websocket', 'polling']) // Prefer websocket
+          .setAuth({'userId': userId})
+          .enableForceNew()
+          .disableAutoConnect()
+          .build(),
+    );
+
     _socket?.onConnect((_) {
-      print('[SOCKET] Connected to server');
+      // Removed debug print
     });
-    
+
     _socket?.onConnectError((data) {
-      print('[SOCKET] Connection Error: $data');
+      // Removed debug print
     });
-    
+
     _socket?.onDisconnect((reason) {
-      print('[SOCKET] Disconnected: $reason');
+      // Removed debug print
     });
-    
+
     _socket?.onError((data) {
-      print('[SOCKET] Error: $data');
+      // Removed debug print
     });
-    
+
     _socket?.on('error', (data) {
-      print('[SOCKET] Server Error Event: $data');
+      // Removed debug print
     });
-    
+
     _socket?.connect();
 
     _socket?.on('receive_message', (data) {
@@ -202,37 +235,37 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     });
 
     _socket?.on('appointment_sync', (data) {
-      print('[SOCKET] Appointment Sync Received: $data');
+      // Removed debug print
       _appointmentSyncController.add(data);
     });
 
     _socket?.on('notification_sync', (data) {
-      print('[SOCKET] Notification Sync Received: $data');
+      // Removed debug print
       _notificationSyncController.add(data);
     });
 
     _socket?.on('profile_sync', (data) {
-      print('[SOCKET] Profile Sync Received: $data');
+      // Removed debug print
       _doctorSyncController.add(data);
     });
 
     _socket?.on('doctor_profile_updated', (data) {
-      print('[SOCKET] Global Doctor Profile Updated Received: $data');
+      // Removed debug print
       _doctorSyncController.add(data);
     });
 
     _socket?.on('doctor_rating_updated', (data) {
-      print('[SOCKET] Global Doctor Rating Updated Received: $data');
+      // Removed debug print
       _doctorSyncController.add(data);
     });
 
     _socket?.on('schedule_sync', (data) {
-      print('[SOCKET] Schedule Sync Received: $data');
+      // Removed debug print
       _scheduleSyncController.add(data);
     });
 
     _socket?.on('review_sync', (data) {
-      print('[SOCKET] Review Sync Received: $data');
+      // Removed debug print
       _reviewSyncController.add(data);
     });
 
@@ -255,7 +288,11 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   // ---- Delete & Clear ----
 
   @override
-  void emitDeleteMessage({required String messageId, required String receiverId, required bool forEveryone}) {
+  void emitDeleteMessage({
+    required String messageId,
+    required String receiverId,
+    required bool forEveryone,
+  }) {
     _socket?.emit('delete_message', {
       'messageId': messageId,
       'receiverId': receiverId,
@@ -272,7 +309,11 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   }
 
   @override
-  Future<MessageModel> uploadFile({required String filePath, required String receiverId, required String type}) async {
+  Future<MessageModel> uploadFile({
+    required String filePath,
+    required String receiverId,
+    required String type,
+  }) async {
     try {
       final fileName = filePath.split('/').last;
       final formData = FormData.fromMap({
@@ -280,7 +321,10 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       });
 
       // POST to /api/messages/upload (Dio base URL already includes /api)
-      final response = await apiClient.dio.post('/messages/upload', data: formData);
+      final response = await apiClient.dio.post(
+        '/messages/upload',
+        data: formData,
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final fileUrl = response.data['fileUrl']?.toString() ?? '';
@@ -290,8 +334,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         if (_socket?.connected == true) {
           _socket!.emit('send_message', {
             'receiverId': receiverId,
-            'content': fileUrl,    // file URL as content
-            'type': type,          // 'image' or 'file'
+            'content': fileUrl, // file URL as content
+            'type': type, // 'image' or 'file'
             'fileUrl': fileUrl,
             'fileName': originalName,
           });
@@ -358,16 +402,18 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   void emitSendMessage(String receiverId, String content) {
     if (_socket != null && _socket!.connected) {
-      print('[SOCKET] Emitting message to $receiverId');
+      // Removed debug print
       _socket!.emit('send_message', {
         'receiverId': receiverId,
         'content': content,
         'type': 'text',
       });
     } else {
-      print('[SOCKET] Not connected. Attempting to connect...');
+      // Removed debug print
       connectSocket();
-      throw ServerException(message: 'Socket is not connected. Trying to reconnect...');
+      throw ServerException(
+        message: 'Socket is not connected. Trying to reconnect...',
+      );
     }
   }
 
@@ -375,7 +421,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<List<ChatContact>> getContacts() async {
     try {
       final response = await apiClient.dio.get('/messages/contacts');
-      
+
       if (response.statusCode == 200 && response.data['success'] == true) {
         final List<dynamic> contactsJson = response.data['data'];
         return contactsJson.map((json) => ChatContact.fromJson(json)).toList();
@@ -384,7 +430,10 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       }
     } on DioException catch (e) {
       throw ServerException(
-        message: e.response?.data['message'] ?? e.message ?? 'Failed to connect to server',
+        message:
+            e.response?.data['message'] ??
+            e.message ??
+            'Failed to connect to server',
       );
     } catch (e) {
       throw ServerException(message: e.toString());
@@ -416,7 +465,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       }
     } on DioException catch (e) {
       throw ServerException(
-        message: e.response?.data?['message']?.toString() ??
+        message:
+            e.response?.data?['message']?.toString() ??
             e.message ??
             'Failed to connect to server',
       );
@@ -431,7 +481,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       await apiClient.dio.put('/messages/read/$senderId');
     } on DioException catch (e) {
       throw ServerException(
-        message: e.response?.data?['message']?.toString() ??
+        message:
+            e.response?.data?['message']?.toString() ??
             e.message ??
             'Failed to mark messages as read',
       );

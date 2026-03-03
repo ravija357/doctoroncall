@@ -13,6 +13,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<UserModel> googleLogin(String idToken) async {
+    return await remoteDataSource.googleLogin(idToken);
+  }
+
+  @override
   Future<void> logout() async {
     return await remoteDataSource.logout();
   }

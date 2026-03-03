@@ -18,9 +18,8 @@ class Auth extends _$Auth {
   AuthState build() {
     _authRepository = sl<AuthRepository>();
     _chatRepository = sl<ChatRepository>();
-    
+
     _syncSubscription = _chatRepository.doctorSyncStream().listen((_) {
-      print('[AUTH] Profile Sync Signal Received');
       syncProfile();
     });
 
@@ -28,9 +27,9 @@ class Auth extends _$Auth {
       _syncSubscription?.cancel();
     });
 
-    // We can't return a Future from build in a synchronous Notifier, 
+    // We can't return a Future from build in a synchronous Notifier,
     // but the original AuthBloc started with AuthInitial and then checked status.
-    // However, Riverpod build is the initial state. 
+    // However, Riverpod build is the initial state.
     // We'll use AuthInitial and trigger a check.
     return AuthInitial();
   }
@@ -59,7 +58,23 @@ class Auth extends _$Auth {
     }
   }
 
-  Future<void> signup(String firstName, String lastName, String email, String password, String role) async {
+  Future<void> googleLogin(String idToken) async {
+    state = AuthLoading();
+    try {
+      final user = await _authRepository.googleLogin(idToken);
+      state = AuthAuthenticated(user: user);
+    } catch (e) {
+      state = AuthError(message: e.toString());
+    }
+  }
+
+  Future<void> signup(
+    String firstName,
+    String lastName,
+    String email,
+    String password,
+    String role,
+  ) async {
     state = AuthLoading();
     try {
       final userModel = UserModel(
@@ -89,7 +104,7 @@ class Auth extends _$Auth {
         state = AuthAuthenticated(user: user);
       }
     } catch (e) {
-      print('[AUTH] Sync Profile Error: $e');
+      // Removed sync error print
     }
   }
 }

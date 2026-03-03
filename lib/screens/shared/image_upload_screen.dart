@@ -42,7 +42,7 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
         // ✅ OPTIMISTIC UPDATE
         final box = Hive.box(HiveBoxes.users);
         box.put('profileImage', pickedFile.path);
-        
+
         // --- AUTO UPLOAD ---
         await _uploadImage();
       }
@@ -70,10 +70,10 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
 
         // ✅ SAVE IMAGE URL FOR PROFILE LOGO
         final box = Hive.box(HiveBoxes.users);
-        
+
         // Update loose key for legacy
         box.put('profileImage', imageUrl);
-        
+
         // Update the full currentUser map so ProfileScreen reacts instantly
         final userData = box.get('currentUser');
         if (userData is Map) {
@@ -93,14 +93,17 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
         setState(() {
           _serverImageUrl = imageUrl;
         });
-        
+
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Image uploaded successfully!")),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Upload failed. Connection too slow or server error."),
+            content: Text(
+              "Upload failed. Connection too slow or server error.",
+            ),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -109,7 +112,10 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
       debugPrint('❌ Fatal upload error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Fatal Error: $e"), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text("Fatal Error: $e"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -143,7 +149,11 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
               color: theme.cardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)).top : BorderSide.none,
+                side: isDark
+                    ? Border.all(
+                        color: theme.dividerColor.withValues(alpha: 0.1),
+                      ).top
+                    : BorderSide.none,
               ),
               elevation: isDark ? 0 : 2,
               child: Padding(
@@ -158,34 +168,43 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
                               height: 180,
                               width: double.infinity,
                               fit: BoxFit.cover,
-                              placeholder: (context, url) => Center(child: CircularProgressIndicator(color: theme.primaryColor)),
-                              errorWidget: (context, url, error) => const Icon(Icons.error),
+                              placeholder: (context, url) => Center(
+                                child: CircularProgressIndicator(
+                                  color: theme.primaryColor,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  const Icon(Icons.error),
                             ),
                           )
                         : _selectedImage != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.file(
-                                  _selectedImage!,
-                                  height: 180,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Icon(
-                                Icons.account_circle,
-                                size: 120,
-                                color: theme.primaryColor.withOpacity(0.5),
-                              ),
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              _selectedImage!,
+                              height: 180,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Icon(
+                            Icons.account_circle,
+                            size: 120,
+                            color: theme.primaryColor.withValues(alpha: 0.5),
+                          ),
                     const SizedBox(height: 16),
                     Text(
                       "Profile Image",
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       "Select image from gallery and upload",
-                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade500,
+                      ),
                     ),
                   ],
                 ),
@@ -198,15 +217,27 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
                 backgroundColor: theme.primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 elevation: 0,
               ),
-              icon: _isUploading 
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.photo_library),
+              icon: _isUploading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.photo_library),
               label: Text(
                 _isUploading ? "Uploading..." : "Choose & Upload Image",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ),
           ],

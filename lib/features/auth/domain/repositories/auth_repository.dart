@@ -3,6 +3,7 @@ import '../../data/models/user_model.dart';
 abstract class AuthRepository {
   Future<void> signUp(UserModel user, String password);
   Future<UserModel> login(String email, String password);
+  Future<UserModel> googleLogin(String idToken);
   Future<void> logout();
   Future<UserModel?> getCachedUser();
   Future<UserModel> getProfile();

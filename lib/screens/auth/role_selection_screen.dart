@@ -12,7 +12,9 @@ class RoleSelectionScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFF6AA9D8),
+      backgroundColor: isDark
+          ? const Color(0xFF121212)
+          : const Color(0xFF6AA9D8),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -30,7 +32,7 @@ class RoleSelectionScreen extends ConsumerWidget {
                 child: Image.asset(
                   'assets/images/doctoroncall_logo.png',
                   fit: BoxFit.contain,
-                  color: isDark ? Colors.white.withOpacity(0.9) : null,
+                  color: isDark ? Colors.white.withValues(alpha: 0.9) : null,
                   colorBlendMode: isDark ? BlendMode.modulate : null,
                 ),
               ),
@@ -56,12 +58,18 @@ class RoleSelectionScreen extends ConsumerWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SplashScreen(initialRole: 'DOCTOR')),
+                    MaterialPageRoute(
+                      builder: (_) => const SplashScreen(initialRole: 'DOCTOR'),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? Theme.of(context).cardColor : Colors.white,
-                  foregroundColor: isDark ? Colors.white : const Color(0xFF6AA9D8),
+                  backgroundColor: isDark
+                      ? Theme.of(context).cardColor
+                      : Colors.white,
+                  foregroundColor: isDark
+                      ? Colors.white
+                      : const Color(0xFF6AA9D8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
@@ -83,12 +91,19 @@ class RoleSelectionScreen extends ConsumerWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SplashScreen(initialRole: 'PATIENT')),
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const SplashScreen(initialRole: 'PATIENT'),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? Theme.of(context).cardColor : Colors.white,
-                  foregroundColor: isDark ? Colors.white : const Color(0xFF6AA9D8),
+                  backgroundColor: isDark
+                      ? Theme.of(context).cardColor
+                      : Colors.white,
+                  foregroundColor: isDark
+                      ? Colors.white
+                      : const Color(0xFF6AA9D8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),

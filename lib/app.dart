@@ -7,7 +7,6 @@ import 'package:doctoroncall/screens/patient/patient_main_screen.dart';
 import 'package:doctoroncall/screens/doctor/doctor_main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:doctoroncall/core/theme/theme_service.dart';
-import 'package:doctoroncall/features/auth/data/models/user_model.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:doctoroncall/theme_data/theme_data.dart';
@@ -82,7 +81,6 @@ class _IncomingCallWrapperState extends ConsumerState<_IncomingCallWrapper>
     final dataSource = sl<ChatRemoteDataSource>();
     _profileSyncSub = dataSource.doctorSyncStream.listen((data) async {
       if (!mounted) return;
-      print('[SYNC] Profile sync data received in App: $data');
 
       final box = Hive.box(HiveBoxes.users);
       final currentUser = box.get('currentUser');
@@ -321,7 +319,7 @@ class _PremiumMessageToastState extends State<_PremiumMessageToast>
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF4889A8).withOpacity(0.45),
+                      color: const Color(0xFF4889A8).withValues(alpha: 0.45),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -334,7 +332,7 @@ class _PremiumMessageToastState extends State<_PremiumMessageToast>
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -365,7 +363,7 @@ class _PremiumMessageToastState extends State<_PremiumMessageToast>
                                 ? '${widget.content.substring(0, 70)}…'
                                 : widget.content,
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 13,
                               fontWeight: FontWeight.w400,
                               height: 1.3,
@@ -383,7 +381,7 @@ class _PremiumMessageToastState extends State<_PremiumMessageToast>
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(

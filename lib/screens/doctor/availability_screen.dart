@@ -19,7 +19,13 @@ class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
   bool _isInitialLoad = true;
 
   final List<String> _days = [
-    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
   ];
 
   @override
@@ -30,11 +36,9 @@ class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
 
   void _checkAndLoad() {
     final state = ref.read(doctorNotifierProvider);
-    print('[AVAILABILITY] Current state: $state');
     if (state is DoctorsLoaded) {
       _loadMySchedule(state);
     } else {
-      print('[AVAILABILITY] Triggering loadDoctors');
       ref.read(doctorNotifierProvider.notifier).loadDoctors();
     }
   }
@@ -42,25 +46,31 @@ class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
   void _loadMySchedule(DoctorsLoaded state) {
     final box = Hive.box(HiveBoxes.users);
     final userData = box.get('currentUser');
-    final String? myUserId = userData is Map ? userData['id'] : box.get('userId');
-    
-    print('[AVAILABILITY] My User ID: $myUserId');
-    print('[AVAILABILITY] Total doctors in state: ${state.doctors.length}');
+    final String? myUserId = userData is Map
+        ? userData['id']
+        : box.get('userId');
 
     try {
       final me = state.doctors.firstWhere((d) {
-        print('[AVAILABILITY] Checking doctor with userId: ${d.userId}');
         return d.userId == myUserId;
       });
-      print('[AVAILABILITY] Found me! Schedules count: ${me.schedules?.length ?? 0}');
       setState(() {
-        _schedules = List.from(me.schedules ?? 
-          _days.map((day) => Schedule(day: day, startTime: "09:00", endTime: "17:00", isOff: false)).toList()
+        _schedules = List.from(
+          me.schedules ??
+              _days
+                  .map(
+                    (day) => Schedule(
+                      day: day,
+                      startTime: "09:00",
+                      endTime: "17:00",
+                      isOff: false,
+                    ),
+                  )
+                  .toList(),
         );
         _isInitialLoad = false;
       });
     } catch (e) {
-      print('[AVAILABILITY] Error finding me in doctors list: $e');
       setState(() {
         _isInitialLoad = false;
       });
@@ -68,9 +78,14 @@ class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
   }
 
   Future<void> _selectTime(int index, bool isStart) async {
-    final currentStr = isStart ? _schedules[index].startTime : _schedules[index].endTime;
+    final currentStr = isStart
+        ? _schedules[index].startTime
+        : _schedules[index].endTime;
     final parts = currentStr.split(':');
-    final initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    final initialTime = TimeOfDay(
+      hour: int.parse(parts[0]),
+      minute: int.parse(parts[1]),
+    );
 
     final picked = await showTimePicker(
       context: context,
@@ -78,9 +93,7 @@ class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF4889A8),
-            ),
+            colorScheme: const ColorScheme.light(primary: Color(0xFF4889A8)),
           ),
           child: child!,
         );
@@ -89,7 +102,8 @@ class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
 
     if (picked != null) {
       setState(() {
-        final timeStr = "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}";
+        final timeStr =
+            "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}";
         _schedules[index] = Schedule(
           day: _schedules[index].day,
           startTime: isStart ? timeStr : _schedules[index].startTime,
@@ -115,79 +129,106 @@ class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
         Navigator.pop(context);
       } else if (next is DoctorError) {
         final errorState = next as DoctorError;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorState.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorState.message)));
       }
     });
 
     return Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: isDark 
-                ? [Theme.of(context).scaffoldBackgroundColor, Theme.of(context).scaffoldBackgroundColor]
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [
+                    Theme.of(context).scaffoldBackgroundColor,
+                    Theme.of(context).scaffoldBackgroundColor,
+                  ]
                 : [primaryColor, const Color(0xFFF8FAFC)],
-              stops: const [0.0, 0.3],
-            ),
+            stops: const [0.0, 0.3],
           ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isDark ? Theme.of(context).cardColor : Colors.white.withOpacity(0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.chevron_left, color: isDark ? Theme.of(context).iconTheme.color : Colors.white),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Theme.of(context).cardColor
+                                  : Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.chevron_left,
+                              color: isDark
+                                  ? Theme.of(context).iconTheme.color
+                                  : Colors.white,
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Text(
-                            'Availability',
-                            style: TextStyle(
-                              fontSize: 24, 
-                              fontWeight: FontWeight.bold, 
-                              color: isDark ? Theme.of(context).textTheme.titleLarge?.color : Colors.white
-                            ),
-                          ),
-                        ],
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          ref.read(doctorNotifierProvider.notifier).updateSchedule(
-                            _schedules.map((s) => s.toJson()).toList(),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isDark ? Theme.of(context).primaryColor : Colors.white,
-                          foregroundColor: isDark ? Colors.white : primaryColor,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
                         ),
-                        child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 16),
+                        Text(
+                          'Availability',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? Theme.of(context).textTheme.titleLarge?.color
+                                : Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        ref
+                            .read(doctorNotifierProvider.notifier)
+                            .updateSchedule(
+                              _schedules.map((s) => s.toJson()).toList(),
+                            );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark
+                            ? Theme.of(context).primaryColor
+                            : Colors.white,
+                        foregroundColor: isDark ? Colors.white : primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
                       ),
-                    ],
-                  ),
+                      child: const Text(
+                        'Save',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
 
-                Expanded(
-                  child: _schedules.isEmpty 
-                    ? Center(child: CircularProgressIndicator(color: isDark ? Theme.of(context).primaryColor : Colors.white))
+              Expanded(
+                child: _schedules.isEmpty
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: isDark
+                              ? Theme.of(context).primaryColor
+                              : Colors.white,
+                        ),
+                      )
                     : ListView.separated(
                         padding: const EdgeInsets.all(20),
                         itemCount: _schedules.length,
@@ -210,11 +251,11 @@ class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
                           );
                         },
                       ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 }
@@ -246,14 +287,18 @@ class _ScheduleItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: schedule.isOff 
-          ? (isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade50) 
-          : Theme.of(context).cardColor,
+        color: schedule.isOff
+            ? (isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.grey.shade50)
+            : Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: schedule.isOff 
-            ? (isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade200) 
-            : Theme.of(context).dividerColor.withOpacity(0.1)
+          color: schedule.isOff
+              ? (isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.grey.shade200)
+              : Theme.of(context).dividerColor.withValues(alpha: 0.1),
         ),
         boxShadow: [
           if (!schedule.isOff)
@@ -273,7 +318,9 @@ class _ScheduleItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: schedule.isOff ? Colors.grey : Theme.of(context).textTheme.bodyLarge?.color,
+                color: schedule.isOff
+                    ? Colors.grey
+                    : Theme.of(context).textTheme.bodyLarge?.color,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -295,7 +342,10 @@ class _ScheduleItem extends StatelessWidget {
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 4),
-                      child: Text('–', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      child: Text(
+                        '–',
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
                     ),
                     _TimeButton(
                       label: _formatTime(schedule.endTime),
@@ -326,19 +376,27 @@ class _TimeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.grey.shade50,
+          color: isDark
+              ? Theme.of(context).scaffoldBackgroundColor
+              : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+          ),
         ),
         child: Text(
           label,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).primaryColor,
+          ),
         ),
       ),
     );

@@ -19,9 +19,9 @@ class MedicalRecordsScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: isDark 
-              ? [theme.scaffoldBackgroundColor, theme.scaffoldBackgroundColor]
-              : [theme.primaryColor, theme.scaffoldBackgroundColor],
+            colors: isDark
+                ? [theme.scaffoldBackgroundColor, theme.scaffoldBackgroundColor]
+                : [theme.primaryColor, theme.scaffoldBackgroundColor],
             stops: const [0.0, 0.3],
           ),
         ),
@@ -39,10 +39,15 @@ class MedicalRecordsScreen extends ConsumerWidget {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isDark ? theme.cardColor : Colors.white.withOpacity(0.2),
+                          color: isDark
+                              ? theme.cardColor
+                              : Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.chevron_left, color: isDark ? theme.iconTheme.color : Colors.white),
+                        child: Icon(
+                          Icons.chevron_left,
+                          color: isDark ? theme.iconTheme.color : Colors.white,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -51,7 +56,9 @@ class MedicalRecordsScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: isDark ? theme.textTheme.titleLarge?.color : Colors.white,
+                        color: isDark
+                            ? theme.textTheme.titleLarge?.color
+                            : Colors.white,
                       ),
                     ),
                   ],
@@ -63,29 +70,33 @@ class MedicalRecordsScreen extends ConsumerWidget {
                 child: () {
                   final state = ref.watch(appointmentNotifierProvider);
                   if (state is AppointmentLoading) {
-                      return Center(child: CircularProgressIndicator(color: isDark ? theme.primaryColor : theme.primaryColor));
-                    }
-                    if (state is AppointmentsLoaded) {
-                      final records = state.appointments
-                          .where((a) => a.status.toLowerCase() == 'completed')
-                          .toList();
-                      
-                      if (records.isEmpty) {
-                        return _buildEmptyState(theme, isDark);
-                      }
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: isDark ? theme.primaryColor : theme.primaryColor,
+                      ),
+                    );
+                  }
+                  if (state is AppointmentsLoaded) {
+                    final records = state.appointments
+                        .where((a) => a.status.toLowerCase() == 'completed')
+                        .toList();
 
-                      return ListView.separated(
-                        padding: const EdgeInsets.all(20),
-                        itemCount: records.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 16),
-                        itemBuilder: (context, index) {
-                          final record = records[index];
-                          return _RecordCard(record: record);
-                        },
-                      );
+                    if (records.isEmpty) {
+                      return _buildEmptyState(theme, isDark);
                     }
-                    return _buildEmptyState(theme, isDark);
-                  }(),
+
+                    return ListView.separated(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: records.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final record = records[index];
+                        return _RecordCard(record: record);
+                      },
+                    );
+                  }
+                  return _buildEmptyState(theme, isDark);
+                }(),
               ),
             ],
           ),
@@ -99,7 +110,11 @@ class MedicalRecordsScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history_edu_rounded, size: 80, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+          Icon(
+            Icons.history_edu_rounded,
+            size: 80,
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          ),
           const SizedBox(height: 16),
           Text(
             'No records found',
@@ -114,7 +129,10 @@ class MedicalRecordsScreen extends ConsumerWidget {
             child: Text(
               'Your completed visit summaries will appear here.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade400, fontSize: 13),
+              style: TextStyle(
+                color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
+                fontSize: 13,
+              ),
             ),
           ),
         ],
@@ -132,20 +150,23 @@ class _RecordCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final dateStr = DateFormat('MMMM d, y').format(record.dateTime);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          if (!isDark) BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
         ],
-        border: isDark ? Border.all(color: theme.dividerColor.withOpacity(0.1)) : null,
+        border: isDark
+            ? Border.all(color: theme.dividerColor.withValues(alpha: 0.1))
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,10 +176,13 @@ class _RecordCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: theme.primaryColor.withOpacity(0.1),
+                  color: theme.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(Icons.file_present_rounded, color: theme.primaryColor),
+                child: Icon(
+                  Icons.file_present_rounded,
+                  color: theme.primaryColor,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -174,7 +198,12 @@ class _RecordCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Dr. ${record.doctorName ?? "Specialist"}',
-                      style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade500, fontSize: 13),
+                      style: TextStyle(
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade500,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -185,14 +214,20 @@ class _RecordCard extends StatelessWidget {
                   Text(
                     dateStr,
                     style: TextStyle(
-                      fontWeight: FontWeight.bold, 
+                      fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      color: theme.textTheme.bodyMedium?.color
+                      color: theme.textTheme.bodyMedium?.color,
                     ),
                   ),
                   Text(
                     record.startTime ?? "",
-                    style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade400, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.grey.shade500
+                          : Colors.grey.shade400,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -203,27 +238,42 @@ class _RecordCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             width: double.infinity,
             decoration: BoxDecoration(
-              color: isDark ? theme.scaffoldBackgroundColor : Colors.grey.shade50,
+              color: isDark
+                  ? theme.scaffoldBackgroundColor
+                  : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+              border: Border.all(
+                color: theme.dividerColor.withValues(alpha: 0.1),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.notes_rounded, size: 16, color: Colors.orange.shade400),
+                    Icon(
+                      Icons.notes_rounded,
+                      size: 16,
+                      color: Colors.orange.shade400,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Clinical Notes',
-                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  record.notes ?? "Standard checkup completed. Patient is in good health.",
-                  style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 13, height: 1.5),
+                  record.notes ??
+                      "Standard checkup completed. Patient is in good health.",
+                  style: TextStyle(
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
                 ),
               ],
             ),
@@ -251,9 +301,15 @@ class _RecordCard extends StatelessWidget {
               label: const Text('Download Report'),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                side: BorderSide(color: theme.dividerColor.withOpacity(0.2)),
-                foregroundColor: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                side: BorderSide(
+                  color: theme.dividerColor.withValues(alpha: 0.2),
+                ),
+                foregroundColor: isDark
+                    ? Colors.grey.shade300
+                    : Colors.grey.shade700,
               ),
             ),
           ),

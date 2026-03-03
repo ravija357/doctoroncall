@@ -42,7 +42,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
             end: Alignment.bottomCenter,
             colors: [
               Theme.of(context).scaffoldBackgroundColor,
-              Theme.of(context).primaryColor.withOpacity(0.05),
+              Theme.of(context).primaryColor.withValues(alpha: 0.05),
             ],
           ),
         ),
@@ -60,7 +60,9 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
                     borderRadius: BorderRadius.circular(30),
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        color: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.1),
                         blurRadius: 40,
                         offset: const Offset(0, 20),
                       ),
@@ -106,7 +108,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
                     elevation: 5,
                     shadowColor: Theme.of(
                       context,
-                    ).primaryColor.withOpacity(0.3),
+                    ).primaryColor.withValues(alpha: 0.3),
                   ),
                 ),
                 const SizedBox(height: 20),
