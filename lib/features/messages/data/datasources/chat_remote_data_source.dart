@@ -397,6 +397,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   void emitEndCall(String to) {
     _socket?.emit('end_call', {'to': to});
+    emitSendMessage(to, "Call Ended 📞");
   }
 
   @override
