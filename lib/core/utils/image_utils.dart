@@ -19,7 +19,9 @@ class ImageUtils {
     }
     if (path.startsWith('/uploads') || path.startsWith('uploads')) {
       final formattedPath = path.startsWith('/') ? path : '/$path';
-      return CachedNetworkImageProvider('${ApiConstants.baseUrl}$formattedPath');
+      return CachedNetworkImageProvider(
+        '${ApiConstants.baseUrl}$formattedPath',
+      );
     }
     return FileImage(File(path));
   }
@@ -39,7 +41,7 @@ class ImageUtils {
       backgroundColor: Colors.grey.shade200,
       backgroundImage: provider,
       onBackgroundImageError: provider != null
-          ? (_, __) {} // silently swallow codec errors
+          ? (_, contextX) {} // silently swallow codec errors
           : null,
       child: provider == null
           ? Icon(fallbackIcon, size: radius, color: fallbackColor)
@@ -47,4 +49,3 @@ class ImageUtils {
     );
   }
 }
-

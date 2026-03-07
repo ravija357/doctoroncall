@@ -16,7 +16,6 @@ class AvailabilityScreen extends ConsumerStatefulWidget {
 
 class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
   List<Schedule> _schedules = [];
-  bool _isInitialLoad = true;
 
   final List<String> _days = [
     "Monday",
@@ -68,12 +67,9 @@ class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
                   )
                   .toList(),
         );
-        _isInitialLoad = false;
       });
-    } catch (e) {
-      setState(() {
-        _isInitialLoad = false;
-      });
+    } catch (_) {
+      // Ignore errors loading schedule
     }
   }
 
@@ -128,7 +124,7 @@ class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
         );
         Navigator.pop(context);
       } else if (next is DoctorError) {
-        final errorState = next as DoctorError;
+        final errorState = next;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(errorState.message)));
@@ -232,7 +228,8 @@ class _AvailabilityScreenState extends ConsumerState<AvailabilityScreen> {
                     : ListView.separated(
                         padding: const EdgeInsets.all(20),
                         itemCount: _schedules.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (_, contextX) =>
+                            const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final s = _schedules[index];
                           return _ScheduleItem(
@@ -303,7 +300,7 @@ class _ScheduleItem extends StatelessWidget {
         boxShadow: [
           if (!schedule.isOff)
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -359,7 +356,7 @@ class _ScheduleItem extends StatelessWidget {
           Switch(
             value: !schedule.isOff,
             onChanged: (val) => onToggleOff(!val),
-            activeColor: Theme.of(context).primaryColor,
+            activeThumbColor: Theme.of(context).primaryColor,
           ),
         ],
       ),

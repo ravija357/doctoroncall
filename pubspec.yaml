@@ -97,6 +97,8 @@ flutter:
     - assets/images/doctoroncall_logo.png
     - assets/images/doctor-image1.jpeg
     - assets/images/doctor-image2.jpg
+    - assets/images/doctor-image3.png
+    - assets/images/app_lock_illustration.png
 
 
 

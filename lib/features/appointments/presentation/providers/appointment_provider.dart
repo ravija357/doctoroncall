@@ -14,6 +14,8 @@ class AppointmentNotifier extends _$AppointmentNotifier {
   late final AppointmentRepository _repository;
   late final ChatRepository _chatRepository;
   StreamSubscription? _syncSubscription;
+  StreamSubscription? _recordSyncSubscription;
+  StreamSubscription? _prescriptionSyncSubscription;
 
   @override
   AppointmentState build() {
@@ -24,8 +26,20 @@ class AppointmentNotifier extends _$AppointmentNotifier {
       syncAppointments();
     });
 
+    _recordSyncSubscription = _chatRepository.recordSyncStream().listen((_) {
+      syncAppointments();
+    });
+
+    _prescriptionSyncSubscription = _chatRepository
+        .prescriptionSyncStream()
+        .listen((_) {
+          syncAppointments();
+        });
+
     ref.onDispose(() {
       _syncSubscription?.cancel();
+      _recordSyncSubscription?.cancel();
+      _prescriptionSyncSubscription?.cancel();
     });
 
     return AppointmentInitial();
@@ -70,7 +84,10 @@ class AppointmentNotifier extends _$AppointmentNotifier {
     }
   }
 
-  Future<void> updateAppointmentStatus(String appointmentId, String status) async {
+  Future<void> updateAppointmentStatus(
+    String appointmentId,
+    String status,
+  ) async {
     try {
       await _repository.updateAppointmentStatus(appointmentId, status);
       await loadDoctorAppointments();
@@ -98,7 +115,9 @@ class AppointmentNotifier extends _$AppointmentNotifier {
     if (role?.toLowerCase() == 'doctor') {
       await loadDoctorAppointments();
     } else {
-      final String? userId = userData is Map ? userData['id'] : box.get('userId');
+      final String? userId = userData is Map
+          ? userData['id']
+          : box.get('userId');
       if (userId != null) {
         await loadAppointments(userId);
       }

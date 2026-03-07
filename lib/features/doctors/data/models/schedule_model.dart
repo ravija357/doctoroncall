@@ -2,16 +2,11 @@ import '../../domain/entities/schedule.dart';
 
 class ScheduleModel extends Schedule {
   const ScheduleModel({
-    required String day,
-    required String startTime,
-    required String endTime,
-    required bool isOff,
-  }) : super(
-          day: day,
-          startTime: startTime,
-          endTime: endTime,
-          isOff: isOff,
-        );
+    required super.day,
+    required super.startTime,
+    required super.endTime,
+    required super.isOff,
+  });
 
   factory ScheduleModel.fromJson(Map<String, dynamic> json) {
     return ScheduleModel(
@@ -22,6 +17,7 @@ class ScheduleModel extends Schedule {
     );
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {
       'day': day,

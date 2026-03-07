@@ -29,7 +29,19 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<List<Message>> getMessages(String userId) => remoteDataSource.getMessages(userId);
+  Future<List<Message>> getMessages(String userId) async {
+    try {
+      final messages = await remoteDataSource.getMessages(userId);
+      // Cache on success
+      await localDataSource.cacheMessages(userId, messages);
+      return messages;
+    } catch (e) {
+      // Fallback to cache
+      final cached = localDataSource.getCachedMessages(userId);
+      if (cached.isNotEmpty) return cached;
+      rethrow;
+    }
+  }
 
   @override
   Future<void> sendMessage(Message message) async {
@@ -40,7 +52,8 @@ class ChatRepositoryImpl implements ChatRepository {
   Stream<Message> receiveMessages() => remoteDataSource.messageStream;
 
   @override
-  Stream<String> messageDeletedStream() => remoteDataSource.messageDeletedStream;
+  Stream<String> messageDeletedStream() =>
+      remoteDataSource.messageDeletedStream;
 
   @override
   Stream<void> chatClearedStream() => remoteDataSource.chatClearedStream;
@@ -55,18 +68,37 @@ class ChatRepositoryImpl implements ChatRepository {
   bool get isSocketConnected => remoteDataSource.isConnected;
 
   @override
-  void deleteMessage({required String messageId, required String receiverId, required bool forEveryone}) {
-    remoteDataSource.emitDeleteMessage(messageId: messageId, receiverId: receiverId, forEveryone: forEveryone);
+  void deleteMessage({
+    required String messageId,
+    required String receiverId,
+    required bool forEveryone,
+  }) {
+    remoteDataSource.emitDeleteMessage(
+      messageId: messageId,
+      receiverId: receiverId,
+      forEveryone: forEveryone,
+    );
   }
 
   @override
   void clearChat({required String receiverId, required bool forEveryone}) {
-    remoteDataSource.emitClearChat(receiverId: receiverId, forEveryone: forEveryone);
+    remoteDataSource.emitClearChat(
+      receiverId: receiverId,
+      forEveryone: forEveryone,
+    );
   }
 
   @override
-  Future<Message> uploadFile({required String filePath, required String receiverId, required String type}) {
-    return remoteDataSource.uploadFile(filePath: filePath, receiverId: receiverId, type: type);
+  Future<Message> uploadFile({
+    required String filePath,
+    required String receiverId,
+    required String type,
+  }) {
+    return remoteDataSource.uploadFile(
+      filePath: filePath,
+      receiverId: receiverId,
+      type: type,
+    );
   }
 
   // ---- Call Signaling ----
@@ -104,7 +136,8 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Stream<dynamic> appointmentSyncStream() => remoteDataSource.appointmentSyncStream;
+  Stream<dynamic> appointmentSyncStream() =>
+      remoteDataSource.appointmentSyncStream;
 
   @override
   Stream<dynamic> doctorSyncStream() => remoteDataSource.doctorSyncStream;
@@ -113,11 +146,34 @@ class ChatRepositoryImpl implements ChatRepository {
   Stream<dynamic> scheduleSyncStream() => remoteDataSource.scheduleSyncStream;
 
   @override
-  Stream<dynamic> notificationSyncStream() => remoteDataSource.notificationSyncStream;
+  Stream<dynamic> notificationSyncStream() =>
+      remoteDataSource.notificationSyncStream;
 
   @override
   Stream<dynamic> reviewSyncStream() => remoteDataSource.reviewSyncStream;
 
   @override
-  Future<void> markAsRead(String senderId) => remoteDataSource.markAsRead(senderId);
+  Future<void> markAsRead(String senderId) =>
+      remoteDataSource.markAsRead(senderId);
+
+  @override
+  Stream<void> recordSyncStream() => remoteDataSource.recordSyncStream();
+
+  @override
+  Stream<void> prescriptionSyncStream() =>
+      remoteDataSource.prescriptionSyncStream();
+
+  @override
+  Stream<String> get typingStream => remoteDataSource.typingStream;
+
+  @override
+  Stream<String> get stopTypingStream => remoteDataSource.stopTypingStream;
+
+  @override
+  void emitTyping(String recipientId) =>
+      remoteDataSource.emitTyping(recipientId);
+
+  @override
+  void emitStopTyping(String recipientId) =>
+      remoteDataSource.emitStopTyping(recipientId);
 }

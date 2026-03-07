@@ -138,7 +138,8 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: _categories.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    separatorBuilder: (_, contextX) =>
+                        const SizedBox(width: 10),
                     itemBuilder: (context, index) {
                       final category = _categories[index];
                       final isSelected = _selectedCategory == category;
@@ -289,7 +290,7 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                 return ListView.separated(
                   padding: const EdgeInsets.all(20),
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  separatorBuilder: (_, contextX) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     final doctor = filtered[index];
                     final name = '${doctor.firstName} ${doctor.lastName}'

@@ -1,6 +1,7 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:doctoroncall/features/messages/data/models/chat_contact_model.dart';
+import 'package:doctoroncall/features/messages/data/models/message_model.dart';
 
 class ChatLocalDataSource {
   Box get _box => Hive.box(HiveBoxes.chatContacts);
@@ -23,7 +24,25 @@ class ChatLocalDataSource {
     );
   }
 
-  /// Clear all cached contacts
+  /// Get cached messages for a specific user
+  List<MessageModel> getCachedMessages(String userId) {
+    final raw = _box.get('messages_$userId');
+    if (raw == null) return [];
+    final List<dynamic> list = raw;
+    return list
+        .map((e) => MessageModel.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  /// Cache messages for a specific user
+  Future<void> cacheMessages(String userId, List<MessageModel> messages) async {
+    await _box.put(
+      'messages_$userId',
+      messages.map((m) => m.toJson()).toList(),
+    );
+  }
+
+  /// Clear all cached contacts and messages
   Future<void> clearCache() async {
     await _box.clear();
   }

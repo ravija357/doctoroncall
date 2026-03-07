@@ -54,9 +54,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _statusTimer.cancel();
     _messageController.dispose();
     // Reset active chat ID
-    Future.microtask(
-      () => ref.read(chatNotifierProvider.notifier).resetActiveChatUserId(),
-    );
+    ref.read(chatNotifierProvider.notifier).resetActiveChatUserId();
     super.dispose();
   }
 
@@ -267,30 +265,66 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         ),
                       );
                     }
-                    return ListView.builder(
-                      reverse: true,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final message = messages[index];
-                        final isMe = message.senderId != widget.otherUserId;
-                        return _MessageBubble(
-                          message: message,
-                          isMe: isMe,
-                          otherUserId: widget.otherUserId,
-                          onDelete: (forEveryone) {
-                            if (message.id != null) {
-                              ref
-                                  .read(chatNotifierProvider.notifier)
-                                  .deleteMessage(
-                                    messageId: message.id!,
-                                    receiverId: widget.otherUserId,
-                                    forEveryone: forEveryone,
-                                  );
-                            }
-                          },
-                        );
-                      },
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: ListView.builder(
+                            reverse: true,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            itemCount: messages.length,
+                            itemBuilder: (context, index) {
+                              final message = messages[index];
+                              final isMe =
+                                  message.senderId != widget.otherUserId;
+                              return _MessageBubble(
+                                message: message,
+                                isMe: isMe,
+                                otherUserId: widget.otherUserId,
+                                onDelete: (forEveryone) {
+                                  if (message.id != null) {
+                                    ref
+                                        .read(chatNotifierProvider.notifier)
+                                        .deleteMessage(
+                                          messageId: message.id!,
+                                          receiverId: widget.otherUserId,
+                                          forEveryone: forEveryone,
+                                        );
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                        if (ref
+                                .watch(chatNotifierProvider.notifier)
+                                .typingUserId ==
+                            widget.otherUserId)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20, bottom: 8),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Row(
+                                children: [
+                                  const SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${widget.otherUserName} is typing...',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.primaryColor,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
                     );
                   }
                   return const SizedBox.shrink();
@@ -422,7 +456,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     vertical: 10,
                   ),
                 ),
-                onSubmitted: (_) => _sendMessage(context),
+                onChanged: (text) {
+                  if (text.isNotEmpty) {
+                    ref
+                        .read(chatNotifierProvider.notifier)
+                        .emitTyping(widget.otherUserId);
+                  } else {
+                    ref
+                        .read(chatNotifierProvider.notifier)
+                        .emitStopTyping(widget.otherUserId);
+                  }
+                },
+                onSubmitted: (_) {
+                  ref
+                      .read(chatNotifierProvider.notifier)
+                      .emitStopTyping(widget.otherUserId);
+                  _sendMessage(context);
+                },
               ),
             ),
           ),
@@ -434,7 +484,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               backgroundColor: theme.primaryColor,
               child: IconButton(
                 icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                onPressed: () => _sendMessage(context),
+                onPressed: () {
+                  ref
+                      .read(chatNotifierProvider.notifier)
+                      .emitStopTyping(widget.otherUserId);
+                  _sendMessage(context);
+                },
               ),
             ),
           ),

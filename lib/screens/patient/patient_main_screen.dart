@@ -142,8 +142,8 @@ class _PatientMainScreenState extends ConsumerState<PatientMainScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(
-                              isDark ? 0.3 : 0.08,
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.3 : 0.08,
                             ),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
@@ -534,7 +534,7 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _categories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              separatorBuilder: (_, contextX) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
                 final cat = _categories[index];
                 final isSelected = _selectedCategory == cat['label'];
@@ -655,7 +655,7 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: filteredDoctors.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              separatorBuilder: (_, contextX) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
                 final doctor = filteredDoctors[index];
                 return TweenAnimationBuilder(

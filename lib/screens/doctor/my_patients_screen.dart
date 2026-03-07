@@ -95,7 +95,8 @@ class MyPatientsScreen extends ConsumerWidget {
                     return ListView.separated(
                       padding: const EdgeInsets.all(20),
                       itemCount: patients.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      separatorBuilder: (_, contextX) =>
+                          const SizedBox(height: 16),
                       itemBuilder: (context, index) {
                         final patient = patients[index];
                         return _PatientCard(

@@ -52,7 +52,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  Future<void> _syncTheme(bool val) async {
+  Future<void> _syncPreferences({bool? dark, bool? notify}) async {
     try {
       final box = Hive.box(HiveBoxes.users);
       final userData = box.get('currentUser');
@@ -65,8 +65,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         '/auth/$userId',
         data: {
           'preferences': {
-            'darkMode': val,
-            'notifications': _notificationsEnabled,
+            'darkMode': dark ?? _isDarkMode,
+            'notifications': notify ?? _notificationsEnabled,
           },
         },
       );
@@ -165,7 +165,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 30),
                 _buildPersonalInfoSection(isDark),
                 const SizedBox(height: 20),
-                _buildPreferencesSection(isDark),
+                _buildPreferencesSection(
+                  isDark,
+                  userData is Map ? userData : {},
+                ),
                 const SizedBox(height: 20),
                 _buildDangerZone(isDark),
                 const SizedBox(height: 40),
@@ -308,7 +311,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildPreferencesSection(bool isDark) {
+  Widget _buildPreferencesSection(bool isDark, Map userData) {
+    final prefs = userData['preferences'] as Map?;
+    final bool darkMode = prefs?['darkMode'] as bool? ?? _isDarkMode;
+    final bool notifyEnabled =
+        prefs?['notifications'] as bool? ?? _notificationsEnabled;
+
     return _buildCard(
       isDark,
       title: 'App Preferences',
@@ -318,11 +326,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           'Dark Mode',
           'Optimize interface for low light',
           Icons.dark_mode_outlined,
-          _isDarkMode,
+          darkMode,
           (val) {
             setState(() => _isDarkMode = val);
             ThemeService().updateTheme(val);
-            _syncTheme(val);
+            _syncPreferences(dark: val);
           },
         ),
         const Divider(height: 1, indent: 50),
@@ -330,8 +338,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           'Push Notifications',
           'Get alerts for messages & appointments',
           Icons.notifications_none_rounded,
-          _notificationsEnabled,
-          (val) => setState(() => _notificationsEnabled = val),
+          notifyEnabled,
+          (val) {
+            setState(() => _notificationsEnabled = val);
+            _syncPreferences(notify: val);
+          },
         ),
       ],
     );

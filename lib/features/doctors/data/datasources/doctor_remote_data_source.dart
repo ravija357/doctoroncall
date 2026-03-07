@@ -39,7 +39,7 @@ class DoctorRemoteDataSourceImpl implements DoctorRemoteDataSource {
     try {
       final response = await apiClient.dio.put(
         '/doctors/profile/schedule',
-        data: schedules.map((s) => s.toJson()).toList(),
+        data: {'schedules': schedules.map((s) => s.toJson()).toList()},
       );
 
       if (response.statusCode != 200 || response.data['success'] != true) {

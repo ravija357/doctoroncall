@@ -28,6 +28,13 @@ class MessagesLoaded extends ChatState {
 
   const MessagesLoaded({required this.messages, this.activeChatUserId});
 
+  MessagesLoaded copyWith({List<Message>? messages, String? activeChatUserId}) {
+    return MessagesLoaded(
+      messages: messages ?? this.messages,
+      activeChatUserId: activeChatUserId ?? this.activeChatUserId,
+    );
+  }
+
   @override
   List<Object?> get props => [messages, activeChatUserId];
 }

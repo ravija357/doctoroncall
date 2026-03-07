@@ -18,8 +18,6 @@ class PatientDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     // Sort history by date descending
     final sortedHistory = List<Appointment>.from(history)
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
@@ -165,7 +163,7 @@ class PatientDetailScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -291,7 +289,7 @@ class PatientDetailScreen extends StatelessWidget {
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -486,7 +484,9 @@ class _TimelineItem extends StatelessWidget {
                       : Border.all(color: Colors.grey.shade100),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.1 : 0.02),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.1 : 0.02,
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),

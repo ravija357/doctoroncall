@@ -496,7 +496,7 @@ class _BookAppointmentScreenState extends ConsumerState<BookAppointmentScreen>
                     boxShadow: isSelected && !isDark
                         ? [
                             BoxShadow(
-                              color: theme.primaryColor.withOpacity(0.4),
+                              color: theme.primaryColor.withValues(alpha: 0.4),
                               blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
@@ -623,7 +623,7 @@ class _BookAppointmentScreenState extends ConsumerState<BookAppointmentScreen>
                   : [
                       if (!isDark)
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
+                          color: Colors.black.withValues(alpha: 0.02),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -696,7 +696,7 @@ class _BookAppointmentScreenState extends ConsumerState<BookAppointmentScreen>
             Container(
               width: 1,
               height: 28,
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withValues(alpha: 0.4),
             ),
             const SizedBox(width: 14),
             const Text(
@@ -745,7 +745,7 @@ class _BookAppointmentScreenState extends ConsumerState<BookAppointmentScreen>
       final ampm = hour >= 12 ? 'pm' : 'am';
       if (hour > 12) hour -= 12;
       if (hour == 0) hour = 12;
-      return '$hour:${minute}$ampm';
+      return '$hour:$minute$ampm';
     } catch (_) {
       return time24;
     }

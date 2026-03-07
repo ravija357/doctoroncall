@@ -61,11 +61,11 @@ class _DoctorMainScreenState extends ConsumerState<DoctorMainScreen> {
             end: Alignment.bottomCenter,
             colors: isDark
                 ? [
-                    const Color(0xFF1A237E).withOpacity(0.6),
+                    const Color(0xFF1A237E).withValues(alpha: 0.6),
                     Theme.of(context).scaffoldBackgroundColor,
                   ]
                 : [
-                    const Color(0xFF4889A8).withOpacity(0.8),
+                    const Color(0xFF4889A8).withValues(alpha: 0.8),
                     const Color(0xFFF8FAFC),
                   ],
             stops: const [0.0, 0.4],
@@ -99,19 +99,19 @@ class _DoctorMainScreenState extends ConsumerState<DoctorMainScreen> {
                       height: 70,
                       decoration: BoxDecoration(
                         color: isDark
-                            ? Theme.of(context).cardColor.withOpacity(0.9)
-                            : Colors.white.withOpacity(0.85),
+                            ? Theme.of(context).cardColor.withValues(alpha: 0.9)
+                            : Colors.white.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(30),
                         border: Border.all(
                           color: isDark
-                              ? Colors.white.withOpacity(0.08)
-                              : Colors.white.withOpacity(0.3),
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.white.withValues(alpha: 0.3),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(
-                              isDark ? 0.3 : 0.08,
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.3 : 0.08,
                             ),
                             blurRadius: 20,
                             offset: const Offset(0, 10),

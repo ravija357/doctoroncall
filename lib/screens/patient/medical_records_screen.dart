@@ -88,7 +88,8 @@ class MedicalRecordsScreen extends ConsumerWidget {
                     return ListView.separated(
                       padding: const EdgeInsets.all(20),
                       itemCount: records.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      separatorBuilder: (_, contextX) =>
+                          const SizedBox(height: 16),
                       itemBuilder: (context, index) {
                         final record = records[index];
                         return _RecordCard(record: record);

@@ -523,7 +523,7 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
                           itemCount: appointments.length > 5
                               ? 5
                               : appointments.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, contextX) =>
                               const SizedBox(width: 16),
                           itemBuilder: (context, i) {
                             final ap = appointments[i];
@@ -727,7 +727,8 @@ class _DoctorDashboardScreenState extends ConsumerState<DoctorDashboardScreen> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: today.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (_, contextX) =>
+                            const SizedBox(height: 12),
                         itemBuilder: (context, i) {
                           final ap = today[i];
                           return Container(
@@ -878,7 +879,7 @@ class _StatCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 24),

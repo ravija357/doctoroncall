@@ -9,6 +9,6 @@ class ApiConstants {
     // IMPORTANT: If you change Wi-Fi networks (e.g., from Home to College),
     // you MUST update this IP address to your computer's new local IP on that network.
     // To find your IP on Mac: Open Terminal and run `ipconfig getifaddr en0`
-    return "http://192.168.0.108:3001"; // <-- CHANGE THIS TO YOUR CURRENT WI-FI IP
+    return "http://192.168.18.123:3001"; // Updated to current Wi-Fi IP
   }
 }

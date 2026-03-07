@@ -58,7 +58,7 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen>
 
       if (currentUserId != null) {
         try {
-          final myDoc = (doctorState as DoctorsLoaded).doctors.firstWhere(
+          final myDoc = doctorState.doctors.firstWhere(
             (d) => d.userId == currentUserId,
           );
           if (!_isUpdatingFee) {
@@ -207,14 +207,16 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen>
 
                 if (doctorState is DoctorsLoaded && currentUserId != null) {
                   try {
-                    final myDoc = (doctorState as DoctorsLoaded).doctors
-                        .firstWhere((d) => d.userId == currentUserId);
+                    final myDoc = doctorState.doctors.firstWhere(
+                      (d) => d.userId == currentUserId,
+                    );
                     fees = myDoc.fees;
                     if (!_isUpdatingFee &&
                         _feeController.text != myDoc.fees.toStringAsFixed(0)) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted)
+                        if (mounted) {
                           _feeController.text = myDoc.fees.toStringAsFixed(0);
+                        }
                       });
                     }
                   } catch (_) {}
@@ -280,7 +282,9 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen>
                               child: Icon(
                                 Icons.receipt_long_rounded,
                                 size: 60,
-                                color: theme.primaryColor.withOpacity(0.5),
+                                color: theme.primaryColor.withValues(
+                                  alpha: 0.5,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 16),

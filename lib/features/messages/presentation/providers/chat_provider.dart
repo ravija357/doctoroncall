@@ -14,6 +14,9 @@ class ChatNotifier extends _$ChatNotifier {
   StreamSubscription? _messageDeletedSubscription;
   StreamSubscription? _chatClearedSubscription;
   StreamSubscription? _notificationSyncSubscription;
+  StreamSubscription? _typingSubscription;
+  StreamSubscription? _stopTypingSubscription;
+  String? typingUserId;
 
   @override
   ChatState build() {
@@ -47,9 +50,25 @@ class ChatNotifier extends _$ChatNotifier {
     _notificationSyncSubscription = _chatRepository
         .notificationSyncStream()
         .listen((data) {
-          print('[SOCKET] Chat/Notification Sync Received: $data');
           loadContacts(isBackground: true);
         });
+
+    _typingSubscription = _chatRepository.typingStream.listen((userId) {
+      typingUserId = userId;
+      // Trigger a light state update if we are in messages view
+      if (state is MessagesLoaded) {
+        state = (state as MessagesLoaded).copyWith();
+      }
+    });
+
+    _stopTypingSubscription = _chatRepository.stopTypingStream.listen((userId) {
+      if (typingUserId == userId) {
+        typingUserId = null;
+        if (state is MessagesLoaded) {
+          state = (state as MessagesLoaded).copyWith();
+        }
+      }
+    });
   }
 
   void disconnectSocket() {
@@ -62,6 +81,8 @@ class ChatNotifier extends _$ChatNotifier {
     _messageDeletedSubscription?.cancel();
     _chatClearedSubscription?.cancel();
     _notificationSyncSubscription?.cancel();
+    _typingSubscription?.cancel();
+    _stopTypingSubscription?.cancel();
   }
 
   Future<void> loadContacts({bool isBackground = false}) async {
@@ -184,9 +205,17 @@ class ChatNotifier extends _$ChatNotifier {
     try {
       await _chatRepository.markAsRead(userId);
       loadContacts(isBackground: true);
-    } catch (e) {
-      print('[CHAT] Mark as read error: $e');
+    } catch (_) {
+      // Ignore background errors
     }
+  }
+
+  void emitTyping(String recipientId) {
+    _chatRepository.emitTyping(recipientId);
+  }
+
+  void emitStopTyping(String recipientId) {
+    _chatRepository.emitStopTyping(recipientId);
   }
 
   void resetActiveChatUserId() {

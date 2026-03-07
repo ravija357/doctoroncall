@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:doctoroncall/core/error/server_exception.dart';
 import 'package:doctoroncall/core/network/api_client.dart';
 import 'package:doctoroncall/features/messages/data/models/chat_contact_model.dart';
@@ -55,11 +55,19 @@ abstract class ChatRemoteDataSource {
   Stream<dynamic> get callAcceptedStream;
   Stream<dynamic> get iceCandidateStream;
   Stream<String> get callEndedStream;
+
+  // New sync and typing events
+  Stream<void> recordSyncStream();
+  Stream<void> prescriptionSyncStream();
+  Stream<String> get typingStream;
+  Stream<String> get stopTypingStream;
+  void emitTyping(String recipientId);
+  void emitStopTyping(String recipientId);
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   final ApiClient apiClient;
-  IO.Socket? _socket;
+  io.Socket? _socket;
   final StreamController<MessageModel> _messageController =
       StreamController<MessageModel>.broadcast();
   final StreamController<dynamic> _notificationController =
@@ -86,6 +94,14 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       StreamController<dynamic>.broadcast();
   final StreamController<dynamic> _reviewSyncController =
       StreamController<dynamic>.broadcast();
+  final StreamController<void> _recordSyncController =
+      StreamController<void>.broadcast();
+  final StreamController<void> _prescriptionSyncController =
+      StreamController<void>.broadcast();
+  final StreamController<String> _typingController =
+      StreamController<String>.broadcast();
+  final StreamController<String> _stopTypingController =
+      StreamController<String>.broadcast();
 
   ChatRemoteDataSourceImpl({required this.apiClient});
 
@@ -135,6 +151,18 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Stream<dynamic> get reviewSyncStream => _reviewSyncController.stream;
 
   @override
+  Stream<void> recordSyncStream() => _recordSyncController.stream;
+
+  @override
+  Stream<void> prescriptionSyncStream() => _prescriptionSyncController.stream;
+
+  @override
+  Stream<String> get typingStream => _typingController.stream;
+
+  @override
+  Stream<String> get stopTypingStream => _stopTypingController.stream;
+
+  @override
   void connectSocket() async {
     if (_socket != null) {
       if (!_socket!.connected) {
@@ -150,9 +178,9 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
     // Removed debug print
 
-    _socket = IO.io(
+    _socket = io.io(
       ApiConstants.baseUrl,
-      IO.OptionBuilder()
+      io.OptionBuilder()
           .setTransports(['websocket', 'polling']) // Prefer websocket
           .setAuth({'userId': userId})
           .enableForceNew()
@@ -161,15 +189,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     );
 
     _socket?.onConnect((_) {
-      // Removed debug print
+      print('[SOCKET] Connected to Server');
     });
 
     _socket?.onConnectError((data) {
-      // Removed debug print
+      print('[SOCKET] Connection Error: $data');
     });
 
     _socket?.onDisconnect((reason) {
-      // Removed debug print
+      print('[SOCKET] Disconnected: $reason');
     });
 
     _socket?.onError((data) {
@@ -245,7 +273,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     });
 
     _socket?.on('profile_sync', (data) {
-      // Removed debug print
+      print('[SOCKET] Profile sync received: $data');
       _doctorSyncController.add(data);
     });
 
@@ -267,6 +295,26 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     _socket?.on('review_sync', (data) {
       // Removed debug print
       _reviewSyncController.add(data);
+    });
+
+    _socket?.on('record_sync', (_) {
+      _recordSyncController.add(null);
+    });
+
+    _socket?.on('prescription_sync', (_) {
+      _prescriptionSyncController.add(null);
+    });
+
+    _socket?.on('typing', (data) {
+      if (data != null && data['from'] != null) {
+        _typingController.add(data['from'].toString());
+      }
+    });
+
+    _socket?.on('stop_typing', (data) {
+      if (data != null && data['from'] != null) {
+        _stopTypingController.add(data['from'].toString());
+      }
     });
 
     // Server sends 'message_sent' back to sender as confirmation after DB save.
@@ -458,8 +506,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         }
 
         return messagesJson
-            .where((json) => json is Map<String, dynamic>)
-            .map((json) => MessageModel.fromJson(json as Map<String, dynamic>))
+            .whereType<Map<String, dynamic>>()
+            .map((json) => MessageModel.fromJson(json))
             .toList();
       } else {
         throw ServerException(message: 'Failed to fetch messages');
@@ -490,5 +538,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     } catch (e) {
       throw ServerException(message: 'Mark as read error: ${e.runtimeType}');
     }
+  }
+
+  @override
+  void emitTyping(String recipientId) {
+    _socket?.emit('typing', {'to': recipientId});
+  }
+
+  @override
+  void emitStopTyping(String recipientId) {
+    _socket?.emit('stop_typing', {'to': recipientId});
   }
 }

@@ -135,7 +135,7 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
         setState(() => _isProcessing = false);
         _showSuccessDialog(theme, isDark, doctorName, dateStr, timeStr);
       } else if (next is AppointmentError) {
-        final errorState = next as AppointmentError;
+        final errorState = next;
         setState(() => _isProcessing = false);
         _showSnack(errorState.message, isError: true);
       }
@@ -769,7 +769,7 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
       final ampm = hour >= 12 ? 'pm' : 'am';
       if (hour > 12) hour -= 12;
       if (hour == 0) hour = 12;
-      return '$hour:${minute}$ampm';
+      return '$hour:$minute$ampm';
     } catch (_) {
       return time24;
     }

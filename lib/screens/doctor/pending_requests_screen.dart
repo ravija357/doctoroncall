@@ -81,7 +81,8 @@ class PendingRequestsScreen extends ConsumerWidget {
                     return ListView.separated(
                       padding: const EdgeInsets.all(20),
                       itemCount: pending.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      separatorBuilder: (_, contextX) =>
+                          const SizedBox(height: 16),
                       itemBuilder: (context, index) {
                         final ap = pending[index];
                         return _PendingCard(ap: ap);

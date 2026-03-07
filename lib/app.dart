@@ -52,6 +52,7 @@ class _IncomingCallWrapperState extends ConsumerState<_IncomingCallWrapper>
     with WidgetsBindingObserver {
   StreamSubscription? _incomingCallSub;
   StreamSubscription? _messageSub;
+  StreamSubscription? _notificationSub;
   StreamSubscription? _profileSyncSub;
 
   @override
@@ -65,6 +66,7 @@ class _IncomingCallWrapperState extends ConsumerState<_IncomingCallWrapper>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _listenForIncomingCalls();
       _listenForMessages();
+      _listenForNotifications();
       _listenForProfileSync();
     });
   }
@@ -150,25 +152,59 @@ class _IncomingCallWrapperState extends ConsumerState<_IncomingCallWrapper>
   void _listenForMessages() {
     final dataSource = sl<ChatRemoteDataSource>();
     _messageSub = dataSource.messageStream.listen((message) {
+      debugPrint('[SOCKET] Message received: ${message.content}');
       if (!mounted) return;
-
-      // TODO: Migrate ChatBloc to ChatProvider and use ref here
-      // final chatBloc = context.read<ChatBloc>();
-      // final currentState = chatBloc.state;
-      // ...
 
       final authState = ref.read(authProvider);
       if (authState is AuthAuthenticated) {
         if (message.senderId == authState.user.id) return;
       }
 
-      _showPremiumMessageToast(message.content);
+      _showPremiumToast(
+        title: 'New Message',
+        content: message.content,
+        icon: Icons.forum_rounded,
+      );
+    });
+  }
+
+  void _listenForNotifications() {
+    final dataSource = sl<ChatRemoteDataSource>();
+    _notificationSub = dataSource.notificationStream.listen((data) {
+      debugPrint('[SOCKET] Notification received: $data');
+      if (!mounted) return;
+
+      // Check if notifications are enabled in preferences
+      final box = Hive.box(HiveBoxes.users);
+      final userData = box.get('currentUser');
+      bool enabled = true;
+      if (userData is Map && userData['preferences'] is Map) {
+        enabled = userData['preferences']['notifications'] as bool? ?? true;
+      }
+
+      if (!enabled) return;
+
+      if (data is Map) {
+        final message = data['message']?.toString() ?? 'You have a new alert';
+        final type = data['type']?.toString() ?? 'INFO';
+
+        IconData icon = Icons.notifications_active_rounded;
+        if (type == 'SUCCESS') icon = Icons.check_circle_rounded;
+        if (type == 'WARNING') icon = Icons.warning_rounded;
+        if (type == 'ERROR') icon = Icons.error_rounded;
+
+        _showPremiumToast(title: 'Notification', content: message, icon: icon);
+      }
     });
   }
 
   OverlayEntry? _toastEntry;
 
-  void _showPremiumMessageToast(String content) {
+  void _showPremiumToast({
+    required String title,
+    required String content,
+    required IconData icon,
+  }) {
     _toastEntry?.remove();
     _toastEntry = null;
 
@@ -176,11 +212,15 @@ class _IncomingCallWrapperState extends ConsumerState<_IncomingCallWrapper>
     late OverlayEntry entry;
 
     entry = OverlayEntry(
-      builder: (ctx) => _PremiumMessageToast(
+      builder: (ctx) => _PremiumToast(
+        title: title,
         content: content,
+        icon: icon,
         onDismiss: () {
-          entry.remove();
-          _toastEntry = null;
+          if (_toastEntry == entry) {
+            entry.remove();
+            _toastEntry = null;
+          }
         },
       ),
     );
@@ -202,6 +242,7 @@ class _IncomingCallWrapperState extends ConsumerState<_IncomingCallWrapper>
     WidgetsBinding.instance.removeObserver(this);
     _incomingCallSub?.cancel();
     _messageSub?.cancel();
+    _notificationSub?.cancel();
     _profileSyncSub?.cancel();
     super.dispose();
   }
@@ -244,19 +285,26 @@ class _IncomingCallWrapperState extends ConsumerState<_IncomingCallWrapper>
 }
 
 // ──────────────────────────────────────────────────────────
-// Premium sliding message toast  (iOS-style push notification)
+// Premium sliding toast  (iOS-style push notification)
 // ──────────────────────────────────────────────────────────
-class _PremiumMessageToast extends StatefulWidget {
+class _PremiumToast extends StatefulWidget {
+  final String title;
   final String content;
+  final IconData icon;
   final VoidCallback onDismiss;
 
-  const _PremiumMessageToast({required this.content, required this.onDismiss});
+  const _PremiumToast({
+    required this.title,
+    required this.content,
+    required this.icon,
+    required this.onDismiss,
+  });
 
   @override
-  State<_PremiumMessageToast> createState() => _PremiumMessageToastState();
+  State<_PremiumToast> createState() => _PremiumToastState();
 }
 
-class _PremiumMessageToastState extends State<_PremiumMessageToast>
+class _PremiumToastState extends State<_PremiumToast>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _slideAnim;
@@ -335,11 +383,7 @@ class _PremiumMessageToastState extends State<_PremiumMessageToast>
                         color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.forum_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                      child: Icon(widget.icon, color: Colors.white, size: 20),
                     ),
                     const SizedBox(width: 12),
                     // Message text
@@ -348,9 +392,9 @@ class _PremiumMessageToastState extends State<_PremiumMessageToast>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text(
-                            'New Message',
-                            style: TextStyle(
+                          Text(
+                            widget.title,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,

@@ -40,7 +40,7 @@ class DoctorModel extends Doctor {
   @HiveField(11)
   final int hiveTotalReviews;
 
-  DoctorModel({
+  const DoctorModel({
     required super.id,
     required super.userId,
     required super.firstName,

@@ -166,6 +166,10 @@ class AuthRemoteDataSource {
         throw ServerException(message: 'Failed to fetch profile');
       }
     } on DioException catch (e) {
+      // Fallback to cache if network fails
+      final cached = await getCachedUser();
+      if (cached != null) return cached;
+
       throw ServerException(
         message:
             e.response?.data['message'] ??
@@ -173,6 +177,9 @@ class AuthRemoteDataSource {
             'Failed to fetch profile',
       );
     } catch (e) {
+      // Try cache even for other errors
+      final cached = await getCachedUser();
+      if (cached != null) return cached;
       rethrow;
     }
   }

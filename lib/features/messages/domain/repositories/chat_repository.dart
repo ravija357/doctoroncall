@@ -13,14 +13,28 @@ abstract class ChatRepository {
   void disconnectSocket();
   bool get isSocketConnected;
 
-  void deleteMessage({required String messageId, required String receiverId, required bool forEveryone});
+  void deleteMessage({
+    required String messageId,
+    required String receiverId,
+    required bool forEveryone,
+  });
   void clearChat({required String receiverId, required bool forEveryone});
 
   /// Upload a file and return a message object with fileUrl populated
-  Future<Message> uploadFile({required String filePath, required String receiverId, required String type});
+  Future<Message> uploadFile({
+    required String filePath,
+    required String receiverId,
+    required String type,
+  });
 
   // Call signaling
-  void emitCallUser({required String userToCall, required dynamic signalData, required String from, required String name, required String callType});
+  void emitCallUser({
+    required String userToCall,
+    required dynamic signalData,
+    required String from,
+    required String name,
+    required String callType,
+  });
   void emitAnswerCall({required String to, required dynamic signal});
   void emitIceCandidate({required String to, required dynamic candidate});
   void emitEndCall(String to);
@@ -29,4 +43,10 @@ abstract class ChatRepository {
   Stream<dynamic> scheduleSyncStream();
   Stream<dynamic> notificationSyncStream();
   Stream<dynamic> reviewSyncStream();
+  Stream<dynamic> recordSyncStream();
+  Stream<dynamic> prescriptionSyncStream();
+  Stream<String> get typingStream;
+  Stream<String> get stopTypingStream;
+  void emitTyping(String recipientId);
+  void emitStopTyping(String recipientId);
 }

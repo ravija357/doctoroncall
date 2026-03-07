@@ -173,8 +173,8 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
                     decoration: BoxDecoration(
                       color: isDark
                           ? theme.cardColor
-                          : Colors.black.withOpacity(
-                              0.05,
+                          : Colors.black.withValues(
+                              alpha: 0.05,
                             ), // A bit darker than white.withOpacity since BG is white
                       shape: BoxShape.circle,
                     ),
