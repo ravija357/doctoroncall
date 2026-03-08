@@ -3,7 +3,6 @@ import 'package:mockito/mockito.dart';
 import 'package:doctoroncall/features/messages/data/repositories/chat_repository_impl.dart';
 import 'package:doctoroncall/features/messages/data/models/chat_contact_model.dart';
 import 'package:doctoroncall/features/messages/data/models/message_model.dart';
-import 'package:doctoroncall/features/messages/domain/entities/message.dart';
 import 'package:doctoroncall/features/messages/data/datasources/chat_local_data_source.dart';
 import '../../../../helpers/test_helpers.mocks.dart';
 

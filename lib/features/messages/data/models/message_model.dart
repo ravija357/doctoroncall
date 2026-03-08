@@ -29,7 +29,8 @@ class MessageModel extends Message {
       senderId: _extractId(json['sender']),
       receiverId: _extractId(json['receiver']),
       content: json['content']?.toString() ?? '',
-      timestamp: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+      timestamp:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
           DateTime.now(),
       isRead: json['read'] == true,
@@ -41,14 +42,15 @@ class MessageModel extends Message {
 
   Map<String, dynamic> toJson() {
     return {
-      'senderId': senderId,
-      'receiverId': receiverId,
+      '_id': id,
+      'sender': senderId,
+      'receiver': receiverId,
       'content': content,
       'type': type,
       if (fileUrl != null) 'fileUrl': fileUrl,
       if (fileName != null) 'fileName': fileName,
       'timestamp': timestamp.toIso8601String(),
-      'isRead': isRead,
+      'read': isRead,
     };
   }
 }

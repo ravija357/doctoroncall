@@ -5,7 +5,6 @@ import 'package:doctoroncall/app.dart';
 import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:doctoroncall/core/di/injection_container.dart';
 import 'package:doctoroncall/core/theme/theme_service.dart';
-import 'package:doctoroncall/core/services/privacy_service.dart';
 
 // Hive TypeAdapters (auto-generated via build_runner)
 import 'package:doctoroncall/features/auth/data/models/user_model.dart';
@@ -21,7 +20,7 @@ Future<void> main() async {
   await initDependencies();
 
   // Enable the "Privacy Shield" Security Sensor
-  await PrivacyService.enablePrivacyShield();
+  // await PrivacyService.enablePrivacyShield();
 
   // Initialize Hive
   await Hive.initFlutter();

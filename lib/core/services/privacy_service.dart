@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter_windowmanager/flutter_windowmanager.dart';
+import 'package:flag_secure/flag_secure.dart';
 
 class PrivacyService {
   /// The "Security Sensor" Logic
@@ -7,7 +7,7 @@ class PrivacyService {
   static Future<void> enablePrivacyShield() async {
     if (Platform.isAndroid) {
       // On Android, this makes the app screen black in task switcher and blocks screenshots
-      await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
+      await FlagSecure.set();
       print("🛡️ Privacy Shield Active: Screenshots Blocked (Android)");
     } else if (Platform.isIOS) {
       // iOS doesn't allow programmatic screenshot blocking via official APIs
@@ -18,7 +18,7 @@ class PrivacyService {
 
   static Future<void> disablePrivacyShield() async {
     if (Platform.isAndroid) {
-      await FlutterWindowManager.clearFlags(FlutterWindowManager.FLAG_SECURE);
+      await FlagSecure.unset();
       print("🔓 Privacy Shield Deactivated");
     }
   }

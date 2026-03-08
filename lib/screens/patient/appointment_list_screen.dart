@@ -620,10 +620,57 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
         );
         return cancelBtn;
       case 'pending':
+        final isDoctor = _isDoctor();
         return Column(
           children: [
             _statusChip('Pending', Colors.orange, Icons.hourglass_empty),
             const SizedBox(height: 8),
+            if (isDoctor) ...[
+              // Accept Button for doctors
+              GestureDetector(
+                onTap: () {
+                  if (appointmentId != null) {
+                    _showAcceptDialog(appointmentId);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF43A047), Color(0xFF388E3C)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF43A047).withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check, color: Colors.white, size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        'Accept',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+            // Cancel Button (shown for both doctors and patients)
             GestureDetector(
               onTap: () {
                 if (appointmentId != null && userId != null) {
@@ -794,6 +841,119 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
                     child: const Center(
                       child: Text(
                         'Yes, Cancel',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAcceptDialog(String appointmentId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle_outline,
+                color: Colors.green.shade400,
+                size: 36,
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'Accept Appointment?',
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A1D26),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Are you sure you want to accept this appointment? It will be marked as confirmed.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(ctx),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F4F8),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Not Now',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF344955),
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ref
+                        .read(appointmentNotifierProvider.notifier)
+                        .updateAppointmentStatus(appointmentId, 'confirmed');
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF43A047), Color(0xFF388E3C)],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF43A047).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Yes, Accept',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           color: Colors.white,

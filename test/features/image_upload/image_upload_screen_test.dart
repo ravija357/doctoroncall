@@ -12,30 +12,30 @@ void main() {
     });
 
     // 2️⃣ uploadImage returns Future<String?>
-    test('uploadImage returns Future<String?>', () {
-      final file = File('fake_image.jpg');
-      final result = ImageUploadService.uploadImage(file);
+    test('uploadImage returns Future<String?>', () async {
+      final tempDir = Directory.systemTemp.createTempSync();
+      final file = File('${tempDir.path}/fake_image.jpg')
+        ..writeAsBytesSync([0]);
 
+      final result = ImageUploadService.uploadImage(file);
       expect(result, isA<Future<String?>>());
+
+      tempDir.deleteSync(recursive: true);
     });
 
-    // 3️⃣ uploadImage returns null for invalid file
-    test('uploadImage returns null for invalid file', () async {
+    // 3️⃣ uploadImage returns null for non-existent file
+    test('uploadImage returns null for non-existing file', () async {
       final file = File('non_existing_image.jpg');
       final result = await ImageUploadService.uploadImage(file);
 
       expect(result, null);
     });
 
-    // 4️⃣ uploadImage handles exceptions safely
-    test('uploadImage handles exceptions safely', () async {
-      try {
-        final file = File('');
-        final result = await ImageUploadService.uploadImage(file);
-        expect(result, null);
-      } catch (e) {
-        fail('Exception should be handled internally');
-      }
+    // 4️⃣ uploadImage handles empty path safely
+    test('uploadImage handles empty path safely', () async {
+      final file = File('');
+      final result = await ImageUploadService.uploadImage(file);
+      expect(result, null);
     });
 
     // 5️⃣ ImageUploadService class exists

@@ -93,12 +93,13 @@ void main() {
 
       // assert
       final expectedMap = {
-        'senderId': 'user1',
-        'receiverId': 'user2',
+        '_id': 'msg1',
+        'sender': 'user1',
+        'receiver': 'user2',
         'content': 'Hello World',
         'type': 'text',
         'timestamp': tDate.toIso8601String(),
-        'isRead': false,
+        'read': false,
       };
       expect(result, expectedMap);
     });

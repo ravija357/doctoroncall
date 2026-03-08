@@ -6,13 +6,10 @@ class ApiClient {
   final Dio dio;
   final FlutterSecureStorage secureStorage;
 
-  ApiClient({
-    required this.dio,
-    required this.secureStorage,
-  }) {
+  ApiClient({required this.dio, required this.secureStorage}) {
     dio.options.baseUrl = '${ApiConstants.baseUrl}/api';
-    dio.options.connectTimeout = const Duration(seconds: 10);
-    dio.options.receiveTimeout = const Duration(seconds: 10);
+    dio.options.connectTimeout = const Duration(seconds: 120);
+    dio.options.receiveTimeout = const Duration(seconds: 120);
 
     dio.interceptors.add(
       InterceptorsWrapper(

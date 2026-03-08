@@ -66,6 +66,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     ref.listen<ChatState>(chatNotifierProvider, (previous, next) {
+      if (!mounted) return;
       if (next is MessagesLoaded) {
         final state = next;
         if (state.messages.isNotEmpty &&

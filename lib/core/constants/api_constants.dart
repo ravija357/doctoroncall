@@ -1,14 +1,20 @@
-// class ApiConstants {
-//   static const String baseUrl = "http://YOUR_SERVER_IP:5000";
-// }
+import 'dart:io' show Platform;
 
 class ApiConstants {
+  static const int port = 3001;
+
   static String get baseUrl {
-    // Both physical devices and simulators on the same WiFi
-    // can access this IP.
-    // IMPORTANT: If you change Wi-Fi networks (e.g., from Home to College),
-    // you MUST update this IP address to your computer's new local IP on that network.
-    // To find your IP on Mac: Open Terminal and run `ipconfig getifaddr en0`
-    return "http://192.168.18.123:3001"; // Updated to current Wi-Fi IP
+    // iOS Simulator & macOS → localhost works directly
+    // Android Emulator → 10.0.2.2 maps to the host machine's localhost
+    // No manual IP changes needed when switching Wi-Fi networks!
+    if (Platform.isAndroid) {
+      // Use the local IP of your machine for physics devices
+      // Android Emulator: "http://10.0.2.2:$port"
+      // Physical Device: "http://192.168.1.94:$port"
+      return "http://192.168.1.94:$port";
+    } else {
+      // iOS simulator, macOS desktop
+      return "http://localhost:$port";
+    }
   }
 }

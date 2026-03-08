@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:doctoroncall/core/providers/lock_provider.dart';
 import 'package:doctoroncall/core/providers/biometric_providers.dart';
 import 'package:mockito/mockito.dart';
+import 'package:doctoroncall/core/constants/hive_boxes.dart';
 
 import 'package:hive_flutter/hive_flutter.dart';
 import 'biometric_mocks.mocks.dart';
@@ -23,8 +24,8 @@ void main() {
     Hive.init('.');
     await Future.microtask(() {}); // Await event loop
     try {
-      if (!Hive.isBoxOpen('settings')) {
-        await Hive.openBox('settings');
+      if (!Hive.isBoxOpen(HiveBoxes.users)) {
+        await Hive.openBox(HiveBoxes.users);
       }
     } catch (e) {
       // Ignore

@@ -27,8 +27,9 @@ class BiometricService {
     try {
       final available = await _auth.getAvailableBiometrics();
       if (available.contains(BiometricType.face)) return BiometricType.face;
-      if (available.contains(BiometricType.fingerprint))
+      if (available.contains(BiometricType.fingerprint)) {
         return BiometricType.fingerprint;
+      }
       if (available.contains(BiometricType.iris)) return BiometricType.iris;
       return null;
     } catch (_) {
