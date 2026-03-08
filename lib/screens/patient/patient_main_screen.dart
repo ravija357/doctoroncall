@@ -25,6 +25,8 @@ import 'package:doctoroncall/screens/patient/prescriptions_screen.dart';
 import 'package:doctoroncall/screens/shared/profile_screen.dart';
 import 'package:doctoroncall/core/utils/image_utils.dart';
 import 'package:doctoroncall/screens/shared/doctor_profile_screen.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class PatientMainScreen extends ConsumerStatefulWidget {
   const PatientMainScreen({super.key});
@@ -331,6 +333,76 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
     {'label': 'ENT', 'icon': Icons.hearing},
     {'label': 'Urologist', 'icon': Icons.medical_services_outlined},
   ];
+
+  bool _isLocating = false;
+  String? _currentAddress;
+
+  Future<void> _getLocation() async {
+    setState(() => _isLocating = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw 'Location services are disabled.';
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw 'Location permissions are denied';
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw 'Location permissions are permanently denied.';
+      }
+
+      Position position = await Geolocator.getCurrentPosition();
+
+      // Reverse Geocoding: Turn coordinates into Address
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      String address = "Location Found";
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        // Create a friendly string like "Kathmandu, Nepal"
+        address =
+            "${place.locality ?? place.subAdministrativeArea ?? ''}, ${place.country ?? ''}";
+        // Remove leading comma if locality was null
+        if (address.startsWith(',')) address = address.substring(2);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _currentAddress = address;
+        _isLocating = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('📍 Smart Location Active: $address'),
+          backgroundColor: Theme.of(context).primaryColor,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLocating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('GPS Error: $e'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
+  }
 
   @override
   void initState() {
@@ -773,11 +845,15 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      greeting,
+                      _currentAddress ?? greeting,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                        color: _currentAddress != null
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.9),
+                        fontSize: _currentAddress != null ? 12 : 14,
+                        fontWeight: _currentAddress != null
+                            ? FontWeight.w900
+                            : FontWeight.w500,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -875,62 +951,109 @@ class _HomeDashboardContentState extends ConsumerState<_HomeDashboardContent> {
   }
 
   Widget _buildSearchBar(ThemeData theme, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? theme.cardColor.withValues(alpha: 0.8)
-            : Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
-          width: 1.5,
-        ),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-        ],
-      ),
-      child: TextField(
-        controller: _searchController,
-        style: TextStyle(
-          fontSize: 16,
-          color: isDark ? Colors.white : Colors.black87,
-          fontWeight: FontWeight.w500,
-        ),
-        decoration: InputDecoration(
-          hintText: 'Search doctors, specialties...',
-          hintStyle: TextStyle(
-            color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
-            fontWeight: FontWeight.w400,
-          ),
-          prefixIcon: Padding(
-            padding: const EdgeInsets.all(14.0),
-            child: Icon(
-              Icons.search_rounded,
-              color: theme.primaryColor,
-              size: 24,
-            ),
-          ),
-          suffixIcon: _query.isNotEmpty
-              ? IconButton(
-                  icon: Icon(
-                    Icons.clear_rounded,
-                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? theme.cardColor.withValues(alpha: 0.8)
+                  : Colors.white.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.white,
+                width: 1.5,
+              ),
+              boxShadow: [
+                if (!isDark)
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() => _query = '');
-                  },
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+              ],
+            ),
+            child: TextField(
+              controller: _searchController,
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w500,
+              ),
+              onChanged: (val) => setState(() => _query = val.toLowerCase()),
+              decoration: InputDecoration(
+                hintText: 'Search doctors...',
+                hintStyle: TextStyle(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                  fontWeight: FontWeight.w400,
+                ),
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.all(14.0),
+                  child: Icon(
+                    Icons.search_rounded,
+                    color: theme.primaryColor,
+                    size: 24,
+                  ),
+                ),
+                suffixIcon: _query.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.clear_rounded,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _query = '');
+                        },
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ),
         ),
-      ),
+        const SizedBox(width: 12),
+        GestureDetector(
+          onTap: _isLocating ? null : _getLocation,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.primaryColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: theme.primaryColor.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1.5,
+              ),
+            ),
+            child: _isLocating
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(
+                    Icons.my_location_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+          ),
+        ),
+      ],
     );
   }
 

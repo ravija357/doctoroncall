@@ -14,7 +14,7 @@ import 'package:doctoroncall/core/constants/hive_boxes.dart';
 import 'package:doctoroncall/core/network/api_client.dart';
 import 'package:doctoroncall/features/auth/domain/repositories/auth_repository.dart';
 import 'package:doctoroncall/features/messages/data/datasources/chat_remote_data_source.dart';
-import 'package:doctoroncall/core/services/biometric_service.dart';
+import 'package:doctoroncall/features/auth/presentation/services/biometric_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'profile_screen_widget_test.mocks.dart';

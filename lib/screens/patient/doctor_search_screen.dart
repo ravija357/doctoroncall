@@ -4,6 +4,7 @@ import 'package:doctoroncall/features/doctors/presentation/providers/doctor_prov
 import 'package:doctoroncall/features/doctors/presentation/bloc/doctor_state.dart';
 import 'package:doctoroncall/screens/shared/doctor_profile_screen.dart';
 import 'package:doctoroncall/core/utils/image_utils.dart';
+import 'package:geolocator/geolocator.dart';
 
 class DoctorSearchScreen extends ConsumerStatefulWidget {
   const DoctorSearchScreen({super.key});
@@ -37,6 +38,49 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
         ref.read(doctorNotifierProvider.notifier).loadDoctors();
       }
     });
+  }
+
+  bool _isLocating = false;
+
+  Future<void> _getLocation() async {
+    setState(() => _isLocating = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw 'Location services are disabled.';
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw 'Location permissions are denied';
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw 'Location permissions are permanently denied, we cannot request permissions.';
+      }
+
+      Position position = await Geolocator.getCurrentPosition();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Location Sensor Active: ${position.latitude.toStringAsFixed(2)}, ${position.longitude.toStringAsFixed(2)}',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+      // In a real app, we would now filter doctors by distance
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.redAccent),
+      );
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
   }
 
   @override
@@ -87,48 +131,83 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
             child: Column(
               children: [
                 // Search Bar
-                Container(
-                  decoration: BoxDecoration(
-                    color: theme.scaffoldBackgroundColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: theme.dividerColor.withValues(alpha: 0.1),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: theme.scaffoldBackgroundColor,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.dividerColor.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (val) =>
+                              setState(() => _searchQuery = val.toLowerCase()),
+                          decoration: InputDecoration(
+                            hintText: 'Search doctors...',
+                            hintStyle: TextStyle(
+                              color: isDark
+                                  ? Colors.grey.shade600
+                                  : Colors.grey.shade400,
+                              fontSize: 14,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              color: theme.primaryColor,
+                              size: 20,
+                            ),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(
+                                      Icons.clear_rounded,
+                                      size: 18,
+                                    ),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) =>
-                        setState(() => _searchQuery = val.toLowerCase()),
-                    decoration: InputDecoration(
-                      hintText: 'Search doctors, specialties...',
-                      hintStyle: TextStyle(
-                        color: isDark
-                            ? Colors.grey.shade600
-                            : Colors.grey.shade400,
-                        fontSize: 15,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: theme.primaryColor,
-                      ),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: Icon(
-                                Icons.clear_rounded,
-                                color: isDark
-                                    ? Colors.grey.shade600
-                                    : Colors.grey,
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: _isLocating ? null : _getLocation,
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.primaryColor.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: _isLocating
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: theme.primaryColor,
+                                ),
+                              )
+                            : Icon(
+                                Icons.my_location_rounded,
+                                color: theme.primaryColor,
+                                size: 20,
                               ),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 const SizedBox(height: 16),
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:doctoroncall/core/providers/lock_provider.dart';
+import 'package:doctoroncall/features/auth/presentation/providers/auth_provider.dart';
 
 class AppLockScreen extends ConsumerStatefulWidget {
   const AppLockScreen({super.key});
@@ -13,19 +14,22 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
   @override
   void initState() {
     super.initState();
-    // Auto trigger biometric unlock on load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handleUnlock();
+    // Auto trigger biometric unlock on load with a small delay to avoid race conditions
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _handleUnlock();
     });
   }
 
   Future<void> _handleUnlock() async {
+    debugPrint('AppLockScreen: Triggering unlock...');
     final success = await ref.read(lockProvider.notifier).unlock();
+    debugPrint('AppLockScreen: Unlock result: $success');
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Authentication failed. Please try again.'),
           backgroundColor: Colors.redAccent,
+          duration: Duration(seconds: 2),
         ),
       );
     }
@@ -111,17 +115,17 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
                     ).primaryColor.withValues(alpha: 0.3),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
                 TextButton(
                   onPressed: () {
-                    // Option to use system PIN or other methods (handled by local_auth usually)
-                    _handleUnlock();
+                    // Fail-safe: if biometric keeps failing, allowed to logout and re-login
+                    ref.read(authProvider.notifier).logout();
                   },
-                  child: Text(
-                    'Try Again',
+                  child: const Text(
+                    'Login with Password',
                     style: TextStyle(
-                      color: Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),

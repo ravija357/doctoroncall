@@ -7,10 +7,11 @@ import 'dart:async' as _i7;
 
 import 'package:dio/dio.dart' as _i3;
 import 'package:doctoroncall/core/network/api_client.dart' as _i8;
-import 'package:doctoroncall/core/services/biometric_service.dart' as _i11;
 import 'package:doctoroncall/features/auth/data/models/user_model.dart' as _i2;
 import 'package:doctoroncall/features/auth/domain/repositories/auth_repository.dart'
     as _i6;
+import 'package:doctoroncall/features/auth/presentation/services/biometric_service.dart'
+    as _i11;
 import 'package:doctoroncall/features/messages/data/datasources/chat_remote_data_source.dart'
     as _i9;
 import 'package:doctoroncall/features/messages/data/models/chat_contact_model.dart'
@@ -650,10 +651,28 @@ class MockBiometricService extends _i1.Mock implements _i11.BiometricService {
       ) as _i7.Future<List<_i12.BiometricType>>);
 
   @override
-  _i7.Future<bool> authenticate() => (super.noSuchMethod(
+  _i7.Future<_i12.BiometricType?> getPreferredBiometricType() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getPreferredBiometricType,
+          [],
+        ),
+        returnValue: _i7.Future<_i12.BiometricType?>.value(),
+      ) as _i7.Future<_i12.BiometricType?>);
+
+  @override
+  _i7.Future<bool> authenticate({
+    String? reason,
+    String? title,
+  }) =>
+      (super.noSuchMethod(
         Invocation.method(
           #authenticate,
           [],
+          {
+            #reason: reason,
+            #title: title,
+          },
         ),
         returnValue: _i7.Future<bool>.value(false),
       ) as _i7.Future<bool>);

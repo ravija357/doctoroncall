@@ -71,12 +71,26 @@ class _IncomingCallWrapperState extends ConsumerState<_IncomingCallWrapper>
     });
   }
 
+  AppLifecycleState? _lastState;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // Re-lock the app if biometric is enabled
-      ref.read(lockProvider.notifier).lock();
+    // Re-lock the app if it was paused and is now resumed.
+    if (state == AppLifecycleState.resumed &&
+        _lastState == AppLifecycleState.paused) {
+      final lockNotifier = ref.read(lockProvider.notifier);
+      final lastUnlock = lockNotifier.lastUnlockTime;
+      final now = DateTime.now();
+
+      // Grace period of 2 seconds to avoid re-locking if resumed just after prompt closes
+      final isRecentlyUnlocked =
+          lastUnlock != null && now.difference(lastUnlock).inSeconds < 2;
+
+      if (!lockNotifier.isAuthenticating && !isRecentlyUnlocked) {
+        lockNotifier.lock();
+      }
     }
+    _lastState = state;
   }
 
   void _listenForProfileSync() {

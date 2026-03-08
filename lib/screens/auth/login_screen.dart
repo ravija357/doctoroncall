@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:doctoroncall/features/auth/presentation/providers/auth_provider.dart';
 import 'package:doctoroncall/features/auth/presentation/bloc/auth_state.dart';
@@ -7,6 +8,7 @@ import 'package:doctoroncall/screens/auth/signup_screen.dart';
 import 'package:doctoroncall/screens/doctor/doctor_main_screen.dart';
 import 'package:doctoroncall/screens/patient/patient_main_screen.dart';
 import 'package:doctoroncall/screens/auth/forgot_password_screen.dart';
+import 'package:doctoroncall/core/providers/lock_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   final String? initialRole;
@@ -45,6 +47,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _onGoogleLoginPressed() async {
     try {
       final googleSignIn = GoogleSignIn(
+        clientId: Theme.of(context).platform == TargetPlatform.iOS
+            ? '909560290491-07a0kqum3e5793n9v0fij04bu9356mo2.apps.googleusercontent.com'
+            : null,
         serverClientId:
             '909560290491-7kcrj5eim8a1qu8nndbrh5pc48uob64n.apps.googleusercontent.com',
       );
@@ -67,6 +72,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<bool> _onBiometricLoginPressed({String? reason, String? title}) async {
+    final lockNotifier = ref.read(lockProvider.notifier);
+    final isAvailable = await lockNotifier.isBiometricLoginAvailable();
+    if (!isAvailable) {
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Biometric login not set up yet.')),
+      );
+      return false;
+    }
+
+    final success = await lockNotifier.unlock(reason: reason, title: title);
+    return success;
+  }
+
   void _goToSignup() {
     Navigator.push(
       context,
@@ -83,6 +103,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next is AuthAuthenticated) {
+        // Save credentials for biometric login if manual login succeeded
+        if (previous is! AuthAuthenticated) {
+          final email = _emailController.text.trim();
+          final password = _passwordController.text.trim();
+          if (email.isNotEmpty && password.isNotEmpty) {
+            ref
+                .read(lockProvider.notifier)
+                .saveBiometricCredential(email, password);
+          }
+        }
+
         final selectedPortal = widget.initialRole?.toUpperCase();
         final userRole = next.user.role.toUpperCase();
 
@@ -331,7 +362,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 24),
+
+                          // Unified Biometric Login Trigger
+                          FutureBuilder<BiometricType?>(
+                            future: ref
+                                .read(lockProvider.notifier)
+                                .getPreferredBiometricType(),
+                            builder: (context, preferredSnapshot) {
+                              return FutureBuilder<bool>(
+                                future: ref
+                                    .read(lockProvider.notifier)
+                                    .isBiometricLoginAvailable(),
+                                builder: (context, loginSnapshot) {
+                                  if (loginSnapshot.data != true) {
+                                    return const SizedBox.shrink();
+                                  }
+
+                                  final preferredType = preferredSnapshot.data;
+                                  final isFace =
+                                      preferredType == BiometricType.face;
+                                  final label = isFace
+                                      ? 'Face ID'
+                                      : 'Fingerprint';
+                                  final icon = isFace
+                                      ? Icons.face_retouching_natural_rounded
+                                      : Icons.fingerprint_rounded;
+
+                                  return Column(
+                                    children: [
+                                      _SocialCard(
+                                        onTap: () async {
+                                          final success =
+                                              await _onBiometricLoginPressed(
+                                                reason:
+                                                    'Authenticate using $label',
+                                                title: '$label Login',
+                                              );
+                                          if (success) {
+                                            await ref
+                                                .read(authProvider.notifier)
+                                                .biometricLogin();
+                                          }
+                                        },
+                                        icon: icon,
+                                        label: 'Login with Biometrics',
+                                      ),
+                                      const SizedBox(height: 24),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                          ),
 
                           // ── Social Login (Responsive) ──
                           LayoutBuilder(

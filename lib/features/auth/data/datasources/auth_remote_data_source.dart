@@ -124,12 +124,35 @@ class AuthRemoteDataSource {
   }
 
   Future<void> logout() async {
-    // Delete the token and user ID
-    await apiClient.secureStorage.delete(key: 'jwt_token');
-    await apiClient.secureStorage.delete(key: 'user_id');
+    // Check if biometrics are enabled before clearing
+    final box = Hive.box(HiveBoxes.users);
+    final userData = box.get('currentUser');
 
-    // Clear all Hive boxes
-    await Hive.box(HiveBoxes.users).clear();
+    // 1. Check secure storage (primary source for LockProvider)
+    final bioEnabledStr = await apiClient.secureStorage.read(
+      key: 'biometric_enabled',
+    );
+    bool biometricsEnabled = bioEnabledStr == 'true';
+
+    // 2. Fallback to Hive preferences check
+    if (!biometricsEnabled &&
+        userData is Map &&
+        userData['preferences'] is Map) {
+      biometricsEnabled =
+          userData['preferences']['biometricEnabled'] as bool? ?? false;
+    }
+
+    // If biometrics NOT enabled anywhere, clear everything as usual
+    if (!biometricsEnabled) {
+      await apiClient.secureStorage.delete(key: 'jwt_token');
+      await apiClient.secureStorage.delete(key: 'user_id');
+      await box.clear();
+    } else {
+      // If biometrics ARE enabled, we preserve jwt_token and currentUser
+      // but we still want the UI to consider the session "logged out" or "locked".
+      // The AuthNotifier will transition to AuthUnauthenticated or AuthLocked.
+    }
+
     if (Hive.isBoxOpen(HiveBoxes.appointments)) {
       await Hive.box(HiveBoxes.appointments).clear();
     }

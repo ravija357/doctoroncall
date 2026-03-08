@@ -1,6 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../services/biometric_service.dart';
+import '../../features/auth/presentation/services/biometric_service.dart';
 
 part 'biometric_providers.g.dart';
 

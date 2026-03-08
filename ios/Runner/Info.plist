@@ -74,6 +74,12 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>This app needs FaceID access to unlock the application securely.</string>
 
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs access to your location to find nearby doctors and pharmacies.</string>
+
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs access to your location to find nearby doctors and pharmacies even when in background.</string>
+
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -81,7 +87,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.909560290491-7kcrj5eim8a1qu8nndbrh5pc48uob64n</string>
+				<string>com.googleusercontent.apps.909560290491-07a0kqum3e5793n9v0fij04bu9356mo2</string>
 			</array>
 		</dict>
 	</array>

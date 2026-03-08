@@ -54,6 +54,9 @@ dependencies:
   jitsi_meet_flutter_sdk: ^11.6.0
   local_auth: ^3.0.1
   google_sign_in: ^6.2.1
+  geolocator: ^11.0.0
+  geocoding: ^3.0.0
+  flutter_windowmanager: ^0.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -48,6 +48,23 @@ class Auth extends _$Auth {
     }
   }
 
+  Future<void> biometricLogin() async {
+    state = AuthLoading();
+    try {
+      final cachedUser = await _authRepository.getCachedUser();
+      if (cachedUser != null) {
+        state = AuthAuthenticated(user: cachedUser);
+      } else {
+        state = AuthUnauthenticated();
+        state = AuthError(
+          message: "Biometric login failed: No stored session.",
+        );
+      }
+    } catch (e) {
+      state = AuthError(message: "Biometric login failed: $e");
+    }
+  }
+
   Future<void> login(String email, String password) async {
     state = AuthLoading();
     try {

@@ -4,18 +4,32 @@ import 'package:doctoroncall/core/providers/lock_provider.dart';
 import 'package:doctoroncall/core/providers/biometric_providers.dart';
 import 'package:mockito/mockito.dart';
 
+import 'package:hive_flutter/hive_flutter.dart';
 import 'biometric_mocks.mocks.dart';
+
+// Create a mock box
+class MockBox extends Mock implements Box {}
 
 void main() {
   late MockBiometricService mockBiometricService;
   late MockFlutterSecureStorage mockSecureStorage;
   late ProviderContainer container;
 
-  setUp(() {
+  setUp(() async {
     mockBiometricService = MockBiometricService();
     mockSecureStorage = MockFlutterSecureStorage();
 
-    // Provide defaults for secure storage to avoid null errors during init
+    // Mock Hive behavior
+    Hive.init('.');
+    await Future.microtask(() {}); // Await event loop
+    try {
+      if (!Hive.isBoxOpen('settings')) {
+        await Hive.openBox('settings');
+      }
+    } catch (e) {
+      // Ignore
+    }
+
     when(
       mockSecureStorage.read(key: 'biometric_enabled'),
     ).thenAnswer((_) async => 'false');

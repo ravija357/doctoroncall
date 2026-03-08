@@ -5,7 +5,8 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
 
-import 'package:doctoroncall/core/services/biometric_service.dart' as _i3;
+import 'package:doctoroncall/features/auth/presentation/services/biometric_service.dart'
+    as _i3;
 import 'package:flutter/services.dart' as _i6;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i2;
 import 'package:local_auth/local_auth.dart' as _i5;
@@ -115,10 +116,28 @@ class MockBiometricService extends _i1.Mock implements _i3.BiometricService {
       ) as _i4.Future<List<_i5.BiometricType>>);
 
   @override
-  _i4.Future<bool> authenticate() => (super.noSuchMethod(
+  _i4.Future<_i5.BiometricType?> getPreferredBiometricType() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getPreferredBiometricType,
+          [],
+        ),
+        returnValue: _i4.Future<_i5.BiometricType?>.value(),
+      ) as _i4.Future<_i5.BiometricType?>);
+
+  @override
+  _i4.Future<bool> authenticate({
+    String? reason,
+    String? title,
+  }) =>
+      (super.noSuchMethod(
         Invocation.method(
           #authenticate,
           [],
+          {
+            #reason: reason,
+            #title: title,
+          },
         ),
         returnValue: _i4.Future<bool>.value(false),
       ) as _i4.Future<bool>);

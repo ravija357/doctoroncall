@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:doctoroncall/features/appointments/presentation/providers/appointment_provider.dart';
 import 'package:doctoroncall/features/appointments/presentation/bloc/appointment_state.dart';
+import 'package:doctoroncall/core/providers/lock_provider.dart';
 
 class EsewaPaymentScreen extends ConsumerStatefulWidget {
   final Doctor doctor;
@@ -102,7 +103,27 @@ class _EsewaPaymentScreenState extends ConsumerState<EsewaPaymentScreen>
       reason: '${widget.doctor.specialization} consultation',
     );
 
-    ref.read(appointmentNotifierProvider.notifier).bookAppointment(appointment);
+    // ✅ BIOMETRIC VERIFICATION BEFORE PAYMENT
+    final lockNotifier = ref.read(lockProvider.notifier);
+    if (lockNotifier.isBiometricEnabled) {
+      lockNotifier.unlock().then((success) {
+        if (success) {
+          ref
+              .read(appointmentNotifierProvider.notifier)
+              .bookAppointment(appointment);
+        } else {
+          setState(() => _isProcessing = false);
+          _showSnack(
+            'Authentication failed. Payment cancelled.',
+            isError: true,
+          );
+        }
+      });
+    } else {
+      ref
+          .read(appointmentNotifierProvider.notifier)
+          .bookAppointment(appointment);
+    }
   }
 
   void _showSnack(String msg, {bool isError = false}) {
